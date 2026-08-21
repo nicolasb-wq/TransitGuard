@@ -43,8 +43,22 @@ lokal `scripts/test.sh` → `dotnet publish` → `rsync` nach `/opt/transitguard
 ## Monetarisierung (ADR-0014, entscheidet über Code-Pfade!)
 14 Tage volle Nutzung ab Device-Ausstellung (`TrialPolicy`), danach Abo **2,99 €/Monat** (`AccessGate`: trial|subscriber|locked, 402 `trial_expired`). Ticket-First-Gate gilt in ALLEN Stufen. Preis nur als `TrialPolicy.MonthlyPriceEur` ändern.
 
-## Build-Stand (21.08.2026, 7. Bausession — docs/25-build-log.md)
-Lösung kompiliert & 50/50 Tests grün (TTL-Engine komplett, Normalizer gegen Live-Fixtures, Ticket-Gate live verifiziert, API im Lokal-Modus In-Memory). Befehle: `dotnet build TransitGuard.sln -c Release` · `dotnet test` · `dotnet run --project src/TransitGuard.Api`. Standalone: Backend 67/67 Tests grün + **PWA gebaut** (`web/`: Ticket-Gate, Trial-Banner, Fahrtensuche mit Standort-Autofill, Abfahrten mit Ist/Soll, Kontroll-Warnungen ≥1 Haltestelle vorher, 1-Tap-Meldung, Abo/Ticket-Screens). Neu: Hangfire-Jobs live bewiesen (TTL-Sweep 15 s), SignalR-Live in PWA (E2E-PASS via verifikation/signalr_e2e.mjs), Umstiegsrouter v2 (transfer_connections), EF-Stores hinter Data:Provider=postgres (Laufzeit auf PG-Host prüfen!). Dev-Tool: TTL__DEVOVERRIDESECONDS nur lokal. Neu: **PG-Laufzeit bewiesen** (PG16+PostGIS ohne Root via Micromamba; Migrationen 0001-0005, Partitionen, RLS live); StaticSyncJob komplett + AlarmSink; 73/73 Tests. OFFEN: Echtdaten-StaticSync auf Prod-RAM, SMTP, Flutter, Payment. Regel: Schema-Änderungen IMMER gegen echtes PG validieren (22-build-log §2). Neu: deploy/RUNBOOK-SERVER.md = verbindlicher Erst-Deploy-Pfad (Phase 5: static-sync VOR rt-poll!); scripts/acceptance.sh = Abnahme; Flutter: **analyze 0 / test 5/5 / Debug-APK gebaut+verifiziert** (app/transitguard-debug.apk); Release-Signierung fertig (upload-keystore.jks + key.properties, conditional im Gradle); Release-AAB auf Dev-Maschine: `flutter build appbundle --release` + die 2 minify-Zeilen im build.gradle.kts entfernen (R8 > 1,5-GB-Sandbox-RAM, 4 Versuche bewiesen).
+## Build-Stand (21.08.2026, 8. Bausession — docs/26-build-log.md)
+**QA-Loop 5/5 grün** (`scripts/qa-loop.sh 5`, Exit 0): Build 0 Fehler/0 Warnungen · Backend **79/79** · `flutter analyze` 0 · `flutter test` **13/13** · Web-Build · Acceptance 5/5.
+Befehle: `dotnet build TransitGuard.sln -c Release` · `dotnet test` · `dotnet run --project src/TransitGuard.Api` (Lokal-Modus, In-Memory, lädt `tests/fixtures/static_mini.zip`).
+
+**Neu in Session 8:**
+- QA-Loop hatte sieben Defekte, drei davon **falsches Grün** (Flutter-Gates konnten strukturell nie rot werden; Test-Gate maskierte ein rotes Testprojekt). Gates liefern jetzt echte Exit-Codes und kennen vier Zustände (grün / durch Fixer behoben / rot / **übersprungen**). Eine fehlende Toolchain gilt nie als grün.
+- **UX-Überarbeitung** beider Kanäle: drei Ziele (Fahren > Warnen > Mehr) in einer Leiste am unteren Rand, Bottom-Sheets, Skeletons, deutsche Fehlertexte, hell+dunkel, Trefferflächen ≥ 48 px. PWA installierbar (Manifest + Icons), keine Google-Fonts-Abhängigkeit mehr. Oberfläche in `web/src/screens/` + `web/src/ui/`, Tokens in `web/src/styles.css`, Flutter-Spiegelung in `app/lib/theme.dart`.
+- **Auslieferung korrigiert (war launch-blockierend):** `deploy/Caddyfile` reicht `/v1/*`, `/health/*`, `/hubs/*` per `handle`-Block an die API — **Same-Origin, kein CORS** (das nirgends konfiguriert ist). `handle` ist Pflicht, nicht bloß ein Pfad-Matcher: Caddy führt `try_files` vor `reverse_proxy` aus. PWA **ohne** `VITE_API_URL` bauen. Absicherung: `scripts/verify-caddy.sh`.
+- **Release-AAB gebaut** (16-GB-Maschine): 50,4 MB, R8+Shrinker wieder AN, `mapping.txt` belegt keinen Rückbau-Schaden. Zwei Upload-Sperren: Sandbox-Key und `--dart-define=API_BASE` (Compile-Zeit-Konstante, liegt in `libapp.so`, **nicht** in `classes.dex`) — siehe `deploy/PLAY-CHECKLISTE.md`.
+- Belegt weiterhin aus früheren Sessions: PG16+PostGIS-Laufzeit inkl. RLS und Partitionen (22-build-log), SignalR-E2E, Hangfire-Sweep.
+
+**Neue Verifikations-Werkzeuge:** `verifikation/pwa_smoke.mjs` (echter Browser, hell+dunkel, gegen die Caddy-Konfiguration: Gate, Sperre, Melden, Klarnamen, Trefferflächen, Copy-Nie-Liste, Manifest) · `scripts/verify-caddy.sh` (6 Prüfungen der Auslieferung).
+
+**OFFEN:** Gerätetest der Flutter-App · Server-Erstdeploy · Echtdaten-StaticSync auf Prod-RAM · Anwalt F-1/F-18 · eigener Upload-Key + Play App Signing · SMTP · Hangfire-Postgres-Storage · T2.4-DB-Teil · Service-Worker (bewusst zurückgestellt: Cache darf keine Meldungsdaten halten).
+
+**Regel bleibt:** Schema-Änderungen IMMER gegen echtes PG validieren (22-build-log §2). Jeder Bugfix bekommt zuerst einen Testfall.
 
 ## Teststrategie
 Core = xUnit tabellengetrieben (Kreis: TtlEngine/Normalizer/TrustEngine); Api-Integration gegen docker-compose-Postgres; Fixtures aus echten Feed-Mitschnitten (`verifikation/`-Skripte erzeugen sie); E2E-Checkliste Stage. kein CI — `scripts/test.sh` ist das Gate.

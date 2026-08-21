@@ -16,9 +16,11 @@ node_modules/
 web/dist/
 *.tsbuildinfo
 
-# Flutter
+# Flutter / Android-Build
 app/build/
 app/.dart_tool/
+app/android/.gradle/
+app/android/.kotlin/
 
 # Lokale Laufzeit-/Log-Reste
 *.log

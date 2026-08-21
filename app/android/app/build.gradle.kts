@@ -44,11 +44,13 @@ android {
 
     buildTypes {
         release {
-            // SANDBOX-Workdruck (24/25-build-log): R8/Shrinker braucht >1,5 GB RAM —
-            // hier deaktiviert; auf der Dev-Maschine fuer den Play-Upload WIEDER AKTIVIEREN
-            // (isMinifyEnabled = true) oder `flutter build appbundle` mit Default lassen.
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // R8/Ressourcen-Shrinker sind AN (Stand 21.08.2026 auf einer 16-GB-Maschine
+            // gebaut und verifiziert). Zuvor waren beide wegen einer 1,5-GB-Sandbox
+            // abgeschaltet — das war eine Umgebungs-, keine Produktentscheidung.
+            // Auf sehr kleinen Maschinen: -PdisableMinify=true beim Aufruf.
+            val minifyAus = project.findProperty("disableMinify") == "true"
+            isMinifyEnabled = !minifyAus
+            isShrinkResources = !minifyAus
             signingConfig = if (keystoreProps.exists()) signingConfigs.getByName("upload")
                             else signingConfigs.getByName("debug")
         }
