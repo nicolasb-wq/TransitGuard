@@ -2,9 +2,8 @@
 # ============================================================================
 # TransitGuard QA-Loop — automatischer Prüfen→Beheben→Dokumentieren-Kreislauf.
 #
-# Pro Durchlauf (Pass) laufen 6 Gates: Backend-Build, Backend-Tests,
-# Flutter-Analyze, Flutter-Tests, Web-Build, Acceptance. Ein rotes Gate löst
-# die deterministischen Fixer-Hooks (scripts/qa-fixes.sh) und GENAU EINEN
+# Pro Durchlauf (Pass) laufen elf Gates. Ein rotes Gate löst die
+# deterministischen Fixer-Hooks (scripts/qa-fixes.sh) und GENAU EINEN
 # Wiederholungslauf desselben Gates aus. Bericht je Pass nach
 # docs/qa/qa-pass-N.md, Maschinen-Summary nach docs/qa/qa-pass-N.json.
 #
@@ -13,42 +12,87 @@
 #
 # Gate-Zustaende (bewusst VIER, nicht zwei — eine fehlende Toolchain ist kein
 # Beweis fuer Korrektheit und darf niemals als "gruen" verbucht werden):
-#   0 gruen · 1 rot→durch Fixer behoben · 2 rot · 3 uebersprungen (Toolchain fehlt)
+#   0 gruen · 1 rot→durch Fixer behoben · 2 rot · 3 uebersprungen
+#
+# Selbstprüfung des Loops (26- und 27-build-log): In dieser Datei steckten
+# schon neun Defekte, davon fünf mit FALSCHEM GRÜN. Wer sie ändert, prüfe
+# zuerst, ob das geänderte Gate am kaputten Zustand noch rot werden kann.
 # ============================================================================
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PASSES="${1:-5}"; FIX="${2:-yes}"
 FLUTTER_BIN="${FLUTTER_BIN:-/home/user/.cache/flutter/bin/flutter}"
+CADDY_BIN="${CADDY_BIN:-$(command -v caddy || echo /tmp/caddy)}"
 export PATH="/tmp/dotnet:$(dirname "$FLUTTER_BIN"):$PATH"
 export NUGET_PACKAGES="${NUGET_PACKAGES:-/home/user/.cache/nuget}" DOTNET_NOLOGO=1
 API_URL="${API_URL:-http://127.0.0.1:5099}"
+PWA_PORT="${PWA_PORT:-8080}"          # Caddy: PWA + API unter einem Origin
+FLT_PORT="${FLT_PORT:-8090}"          # Caddy: Flutter-Web + API unter einem Origin
 OUTDIR="$ROOT/docs/qa"; LOGDIR="$OUTDIR/logs"
 mkdir -p "$OUTDIR" "$LOGDIR"
 
-API_PID=""
-cleanup() { [ -n "$API_PID" ] && kill "$API_PID" 2>/dev/null; return 0; }
+# --- Einzelinstanz-Sperre ---------------------------------------------------
+# Zwei gleichzeitig laufende Loops streiten um Ports, API und docs/qa/ und
+# erzeugen dabei still falsche Ergebnisse: am 22.08.2026 meldete ein Pass fuenf
+# rote Gates, weil ein verwaister Zweitlauf die API weggeraeumt hatte. Ein
+# Ergebnis, das von einem unbemerkten Nachbarn abhaengt, ist kein Ergebnis.
+SPERRE="${TMPDIR:-/tmp}/transitguard-qa-loop.lock"
+exec 9>"$SPERRE"
+if ! flock -n 9; then
+  echo "Es laeuft bereits ein QA-Loop (Sperre: $SPERRE). Abbruch." >&2
+  exit 2
+fi
+echo $$ >&9
+
+API_PID=""; CADDY_PID=""; CADDY_FLT_PID=""
+cleanup() {
+  for p in "$API_PID" "$CADDY_PID" "$CADDY_FLT_PID"; do [ -n "$p" ] && kill "$p" 2>/dev/null; done
+  return 0
+}
 trap cleanup EXIT INT TERM
+
+belegt() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
 
 start_api() {
   [ -n "$API_PID" ] && return 0
+  local port="${API_URL##*:}"
+  # Ein fremder Prozess auf dem Port ist KEIN Erfolg: der Loop wuerde sonst
+  # gegen eine andere (womoeglich veraltete) Instanz pruefen und Gruen melden.
+  if belegt "$port"; then
+    echo "   (Port $port ist bereits belegt — QA-Loop startet keine eigene API und bricht ab)" \
+      > "$LOGDIR/api.log"
+    return 1
+  fi
   local dll="$ROOT/src/TransitGuard.Api/bin/Release/net8.0/TransitGuard.Api.dll"
-  [ -f "$dll" ] || { echo "   (API-DLL fehlt — Acceptance kann nicht laufen)"; return 1; }
+  [ -f "$dll" ] || { echo "   (API-DLL fehlt)" > "$LOGDIR/api.log"; return 1; }
   ASPNETCORE_URLS="$API_URL" nohup dotnet "$dll" >"$LOGDIR/api.log" 2>&1 &
   API_PID=$!
-  # Aktiv auf Bereitschaft warten statt blind zu schlafen: curl uebernimmt das
-  # Takten (--retry-connrefused), damit der Loop auch in Umgebungen laeuft,
-  # die freistehende sleep-Prozesse unterbinden.
-  if curl -sf --retry 30 --retry-connrefused --retry-delay 1 --max-time 60 \
-       "$API_URL/health/ready" >/dev/null 2>&1; then
-    return 0
-  fi
-  kill -0 "$API_PID" 2>/dev/null || { echo "   (API-Prozess vorzeitig beendet)"; API_PID=""; }
+  curl -sf --retry 30 --retry-connrefused --retry-delay 1 --max-time 60 \
+    "$API_URL/health/ready" >/dev/null 2>&1 && return 0
+  kill -0 "$API_PID" 2>/dev/null || API_PID=""
   return 1
 }
 
-# gate <name> <cmd...> → 0 gruen | 1 rot-behoben | 2 rot
-# Der VOLLSTAENDIGE Gate-Output wird immer nach docs/qa/logs/<name>.log
-# geschrieben — auch bei Gruen, damit Belege nachvollziehbar bleiben.
+# start_caddy <port> <wurzel> <pid-variable>
+start_caddy() {
+  local port="$1" wurzel="$2" var="$3"
+  [ -x "$CADDY_BIN" ] || return 3
+  [ -d "$wurzel" ] || return 3
+  [ -n "$API_PID" ] || return 3
+  eval "[ -n \"\${$var}\" ]" && return 0
+  belegt "$port" && return 3      # fremder Halter: nicht uebernehmen
+  local cfg="$LOGDIR/Caddyfile.$port"
+  sed -e "s|^app.example.de {|:$port {|" -e "s|/srv/pwa|$wurzel|" \
+      -e "s|127.0.0.1:5080|${API_URL#http://}|" "$ROOT/deploy/Caddyfile" \
+    | awk "/^:$port \{/,0" > "$cfg"
+  nohup "$CADDY_BIN" run --config "$cfg" --adapter caddyfile >"$LOGDIR/caddy-$port.log" 2>&1 &
+  eval "$var=\$!"
+  curl -sf --retry 20 --retry-connrefused --retry-delay 1 --max-time 30 \
+    "http://127.0.0.1:$port/health/ready" >/dev/null 2>&1 || return 3
+  return 0
+}
+
+# gate <name> <fn> → 0 gruen | 1 rot-behoben | 2 rot
 gate() {
   local name="$1"; shift
   local out rc
@@ -62,100 +106,151 @@ gate() {
   printf '%s\n' "$out" > "$LOGDIR/$name.log"; return 2
 }
 
-# --- Gate-Implementierungen: immer der ECHTE Exit-Code des Werkzeugs. --------
+# run_gate <name> <fn> [vorbedingung]
+run_gate() {
+  local name="$1" fn="$2" pre="${3:-}"
+  if [ -n "$pre" ] && ! eval "$pre" >/dev/null 2>&1; then
+    echo "SKIP: Vorbedingung nicht erfuellt ($pre)" > "$LOGDIR/$name.log"; return 3
+  fi
+  gate "$name" "$fn"
+}
+
+# --- Gates: immer der ECHTE Exit-Code des Werkzeugs -------------------------
 g_build() {
   cd "$ROOT" || return 2
   local out; out=$(dotnet build TransitGuard.sln -c Release --nologo 2>&1); local rc=$?
   printf '%s\n' "$out"
   [ $rc -ne 0 ] && return $rc
-  # Projektregel: 0 Fehler UND 0 Warnungen (CLAUDE.md, 25-build-log).
   if printf '%s' "$out" | grep -qE '^ +[1-9][0-9]* (Warning\(s\)|Warnung\(en\))'; then
     echo "QA: Build hat Warnungen — Projektregel verlangt 0 Warnungen."; return 1
   fi
   return 0
 }
+
+# Backend-Tests OHNE die Postgres-Tests: die bekommen ein eigenes Gate, damit
+# ein "uebersprungen" mangels Datenbank nicht als Gruen durchgeht.
 g_backendtests() {
   cd "$ROOT" || return 2
-  # Exit-Code von dotnet test ist massgeblich. Ein grep auf 'Failed:     0'
-  # waere falsch: bei zwei Testprojekten wuerde die Zeile des GRUENEN Projekts
-  # ein rotes Projekt maskieren.
-  dotnet test TransitGuard.sln -c Release --no-build --nologo 2>&1
+  dotnet test TransitGuard.sln -c Release --no-build --nologo \
+    --filter "FullyQualifiedName!~Postgres" 2>&1
 }
-g_flutteranalyze() {
-  cd "$ROOT/app" || return 2
-  [ -d .dart_tool ] || "$FLUTTER_BIN" pub get 2>&1
-  "$FLUTTER_BIN" analyze 2>&1
+
+g_pgtests() {
+  cd "$ROOT" || return 2
+  local cs; cs=$("$ROOT/scripts/pg-dev.sh" env 2>/dev/null)
+  local out; out=$(TG_TEST_DB="$cs" dotnet test tests/TransitGuard.Api.Tests -c Release \
+    --no-build --nologo --filter "FullyQualifiedName~Postgres" 2>&1); local rc=$?
+  printf '%s\n' "$out"
+  [ $rc -ne 0 ] && return $rc
+  # Ein Lauf, der nur uebersprungen hat, ist KEIN Beweis.
+  if printf '%s' "$out" | grep -qE 'Passed: *0,'; then
+    echo "QA: kein einziger Postgres-Test wirklich gelaufen."; return 2
+  fi
+  return 0
 }
-g_fluttertests() {
-  cd "$ROOT/app" || return 2
-  [ -d .dart_tool ] || "$FLUTTER_BIN" pub get 2>&1
-  "$FLUTTER_BIN" test 2>&1
-}
+
+g_flutteranalyze() { cd "$ROOT/app" || return 2; [ -d .dart_tool ] || "$FLUTTER_BIN" pub get 2>&1; "$FLUTTER_BIN" analyze 2>&1; }
+g_fluttertests()  { cd "$ROOT/app" || return 2; [ -d .dart_tool ] || "$FLUTTER_BIN" pub get 2>&1; "$FLUTTER_BIN" test 2>&1; }
+
 g_webbuild() {
   cd "$ROOT/web" || return 2
   [ -d node_modules ] || npm ci 2>&1
   npm run build 2>&1
 }
-g_acceptance() {
-  "$ROOT/scripts/acceptance.sh" "$API_URL" 2>&1
-}
 
-# run_gate <name> <fn> [precondition-cmd]
-# Ist die Vorbedingung gesetzt und nicht erfuellt, wird das Gate uebersprungen
-# (rc 3) — OHNE es auszufuehren und ohne die Fixer-Logik zu bemuehen. Eine
-# fehlende Toolchain ist kein Beweis fuer Korrektheit.
-run_gate() {
-  local name="$1" fn="$2" pre="${3:-}"
-  if [ -n "$pre" ] && ! eval "$pre"; then
-    echo "SKIP: Vorbedingung nicht erfuellt ($pre)" > "$LOGDIR/$name.log"; return 3
-  fi
-  gate "$name" "$fn"
+g_acceptance()  { "$ROOT/scripts/acceptance.sh" "$API_URL" 2>&1; }
+g_contract()    { "$ROOT/scripts/verify-contract.sh" "$API_URL" 2>&1; }
+g_caddy()       { CADDY="$CADDY_BIN" "$ROOT/scripts/verify-caddy.sh" "$API_URL" "$((PWA_PORT + 100))" 2>&1; }
+g_pwasmoke()    { BASE="http://127.0.0.1:$PWA_PORT" OUT="$LOGDIR/shots" bash -c 'mkdir -p "$OUT"; node '"$ROOT"'/verifikation/pwa_smoke.mjs' 2>&1; }
+g_swoffline()   { BASE="http://127.0.0.1:$PWA_PORT" node "$ROOT/verifikation/sw_offline.mjs" 2>&1; }
+
+g_flutterweb() {
+  cd "$ROOT/app" || return 2
+  # IMMER neu bauen: ein alter build/web-Ordner wuerde einen laengst
+  # geaenderten Stand pruefen und faelschlich Gruen melden.
+  "$FLUTTER_BIN" build web --release --dart-define=API_BASE= --no-web-resources-cdn 2>&1 | tail -3
+  BASE="http://127.0.0.1:$FLT_PORT" OUT="$LOGDIR/shots-flutter" \
+    bash -c 'mkdir -p "$OUT"; node '"$ROOT"'/verifikation/flutter_web_smoke.mjs' 2>&1
 }
 
 label() {
   case "$1" in
     0) echo "✅ grün" ;;
     1) echo "🔧 rot → durch Fixer behoben" ;;
-    3) echo "⏭️ übersprungen (Toolchain fehlt)" ;;
+    3) echo "⏭️ übersprungen" ;;
     *) echo "❌ rot" ;;
   esac
 }
+
+HAT_PLAYWRIGHT='node -e "require.resolve(require(\"path\").join(require(\"child_process\").execSync(\"npm root -g\",{encoding:\"utf8\"}).trim(),\"playwright\",\"index.js\"))"'
 
 OVERALL=0
 for pass in $(seq 1 "$PASSES"); do
   echo "== QA-Pass $pass/$PASSES =="
   R_BUILD=$(run_gate build g_build; echo $?)
   R_BETESTS=$(run_gate backendtests g_backendtests; echo $?)
+  R_PG=$(run_gate pgtests g_pgtests "$ROOT/scripts/pg-dev.sh env"; echo $?)
   R_FANALYZE=$(run_gate flutteranalyze g_flutteranalyze '[ -x "$FLUTTER_BIN" ]'; echo $?)
   R_FTESTS=$(run_gate fluttertests g_fluttertests '[ -x "$FLUTTER_BIN" ]'; echo $?)
   R_WEB=$(run_gate webbuild g_webbuild; echo $?)
-  if start_api; then R_ACC=$(run_gate acceptance g_acceptance; echo $?)
-  else R_ACC=2; echo "API konnte nicht gestartet werden — siehe docs/qa/logs/api.log" > "$LOGDIR/acceptance.log"; fi
+
+  if start_api; then
+    R_ACC=$(run_gate acceptance g_acceptance; echo $?)
+    R_CONTRACT=$(run_gate contract g_contract; echo $?)
+    R_CADDY=$(run_gate caddy g_caddy '[ -x "$CADDY_BIN" ] && [ -d "$ROOT/web/dist" ]'; echo $?)
+  else
+    R_ACC=2; R_CONTRACT=2; R_CADDY=2
+    echo "API konnte nicht gestartet werden — siehe docs/qa/logs/api.log" > "$LOGDIR/acceptance.log"
+  fi
+
+  if start_caddy "$PWA_PORT" "$ROOT/web/dist" CADDY_PID; then
+    R_PWA=$(run_gate pwasmoke g_pwasmoke "$HAT_PLAYWRIGHT"; echo $?)
+    R_SW=$(run_gate swoffline g_swoffline "$HAT_PLAYWRIGHT"; echo $?)
+  else R_PWA=3; R_SW=3
+    echo "SKIP: kein Caddy-Origin auf $PWA_PORT" > "$LOGDIR/pwasmoke.log"
+    cp "$LOGDIR/pwasmoke.log" "$LOGDIR/swoffline.log" 2>/dev/null
+  fi
+
+  # Auf einer frischen Maschine gibt es app/build/web noch nicht — dann koennte
+  # Caddy nichts ausliefern und das Gate wuerde uebersprungen, obwohl Flutter da
+  # ist. Deshalb einmal vorbauen, BEVOR der Origin hochgezogen wird.
+  if [ -x "$FLUTTER_BIN" ] && [ ! -f "$ROOT/app/build/web/index.html" ]; then
+    (cd "$ROOT/app" && "$FLUTTER_BIN" build web --release --dart-define=API_BASE= \
+       --no-web-resources-cdn) >"$LOGDIR/flutterweb-vorbau.log" 2>&1
+  fi
+  if [ -x "$FLUTTER_BIN" ] && start_caddy "$FLT_PORT" "$ROOT/app/build/web" CADDY_FLT_PID; then
+    R_FWEB=$(run_gate flutterweb g_flutterweb "$HAT_PLAYWRIGHT"; echo $?)
+  else R_FWEB=3; echo "SKIP: kein Flutter-Web-Origin auf $FLT_PORT" > "$LOGDIR/flutterweb.log"; fi
 
   STAMP=$(date -u +%FT%TZ)
   {
-    echo "# QA-Pass $pass — $STAMP"
-    echo ""
-    echo "| Gate | Ergebnis |"
-    echo "|---|---|"
-    echo "| Backend-Build | $(label "$R_BUILD") |"
-    echo "| Backend-Tests | $(label "$R_BETESTS") |"
-    echo "| Flutter-Analyze | $(label "$R_FANALYZE") |"
-    echo "| Flutter-Tests | $(label "$R_FTESTS") |"
-    echo "| Web-Build | $(label "$R_WEB") |"
-    echo "| Acceptance | $(label "$R_ACC") |"
+    echo "# QA-Pass $pass — $STAMP"; echo ""
+    echo "| Gate | Ergebnis | prüft |"; echo "|---|---|---|"
+    echo "| Backend-Build | $(label "$R_BUILD") | 0 Fehler, 0 Warnungen |"
+    echo "| Backend-Tests | $(label "$R_BETESTS") | Core, Ingest, API-Kette |"
+    echo "| Postgres-Tests | $(label "$R_PG") | Migrationen, RLS, Partitionen gegen echtes PG |"
+    echo "| Flutter-Analyze | $(label "$R_FANALYZE") | statische Analyse |"
+    echo "| Flutter-Tests | $(label "$R_FTESTS") | DTO-Verträge, Gate, Copy-Nie-Liste |"
+    echo "| Web-Build | $(label "$R_WEB") | tsc gegen den generierten Vertrag |"
+    echo "| Acceptance | $(label "$R_ACC") | Vertragskette über HTTP |"
+    echo "| Vertrag | $(label "$R_CONTRACT") | Server-Drift + Frische der Generate |"
+    echo "| Caddy-Auslieferung | $(label "$R_CADDY") | Same-Origin, no-store, Deep-Links |"
+    echo "| PWA-Rauchtest | $(label "$R_PWA") | echter Browser, hell+dunkel, Umstiege |"
+    echo "| Service Worker | $(label "$R_SW") | keine Meldungsdaten im Cache, offline |"
+    echo "| Flutter-Laufzeit | $(label "$R_FWEB") | echte App im Browser gegen echte API |"
     echo ""
     echo "Vollständige Gate-Ausgaben: \`docs/qa/logs/<gate>.log\` (wird je Pass überschrieben)."
-    echo "Fixer-Hooks: \`scripts/qa-fixes.sh\` — ausschließlich deterministische Korrekturen;"
-    echo "alles andere wird rot gemeldet und zwischen den Passes von Hand behoben."
+    echo "„Übersprungen\" heißt: Werkzeug oder Dienst fehlt — das ist KEIN Beweis für Korrektheit."
   } > "$OUTDIR/qa-pass-$pass.md"
 
-  printf '{"pass":%d,"utc":"%s","gates":{"build":%d,"backendtests":%d,"flutteranalyze":%d,"fluttertests":%d,"webbuild":%d,"acceptance":%d}}\n' \
-    "$pass" "$STAMP" "$R_BUILD" "$R_BETESTS" "$R_FANALYZE" "$R_FTESTS" "$R_WEB" "$R_ACC" \
-    > "$OUTDIR/qa-pass-$pass.json"
+  printf '{"pass":%d,"utc":"%s","gates":{"build":%d,"backendtests":%d,"pgtests":%d,"flutteranalyze":%d,"fluttertests":%d,"webbuild":%d,"acceptance":%d,"contract":%d,"caddy":%d,"pwasmoke":%d,"swoffline":%d,"flutterweb":%d}}\n' \
+    "$pass" "$STAMP" "$R_BUILD" "$R_BETESTS" "$R_PG" "$R_FANALYZE" "$R_FTESTS" "$R_WEB" \
+    "$R_ACC" "$R_CONTRACT" "$R_CADDY" "$R_PWA" "$R_SW" "$R_FWEB" > "$OUTDIR/qa-pass-$pass.json"
 
-  echo "   build=$R_BUILD backend=$R_BETESTS flutter=$R_FANALYZE/$R_FTESTS web=$R_WEB acceptance=$R_ACC  → docs/qa/qa-pass-$pass.md"
-  for v in "$R_BUILD" "$R_BETESTS" "$R_FANALYZE" "$R_FTESTS" "$R_WEB" "$R_ACC"; do
+  echo "   build=$R_BUILD backend=$R_BETESTS pg=$R_PG flutter=$R_FANALYZE/$R_FTESTS web=$R_WEB" \
+       "acc=$R_ACC vertrag=$R_CONTRACT caddy=$R_CADDY pwa=$R_PWA sw=$R_SW flutterweb=$R_FWEB"
+  for v in "$R_BUILD" "$R_BETESTS" "$R_PG" "$R_FANALYZE" "$R_FTESTS" "$R_WEB" \
+           "$R_ACC" "$R_CONTRACT" "$R_CADDY" "$R_PWA" "$R_SW" "$R_FWEB"; do
     [ "$v" = "2" ] && OVERALL=1
   done
 done

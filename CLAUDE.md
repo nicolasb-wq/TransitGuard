@@ -43,22 +43,34 @@ lokal `scripts/test.sh` → `dotnet publish` → `rsync` nach `/opt/transitguard
 ## Monetarisierung (ADR-0014, entscheidet über Code-Pfade!)
 14 Tage volle Nutzung ab Device-Ausstellung (`TrialPolicy`), danach Abo **2,99 €/Monat** (`AccessGate`: trial|subscriber|locked, 402 `trial_expired`). Ticket-First-Gate gilt in ALLEN Stufen. Preis nur als `TrialPolicy.MonthlyPriceEur` ändern.
 
-## Build-Stand (21.08.2026, 8. Bausession — docs/26-build-log.md)
-**QA-Loop 5/5 grün** (`scripts/qa-loop.sh 5`, Exit 0): Build 0 Fehler/0 Warnungen · Backend **79/79** · `flutter analyze` 0 · `flutter test` **13/13** · Web-Build · Acceptance 5/5.
-Befehle: `dotnet build TransitGuard.sln -c Release` · `dotnet test` · `dotnet run --project src/TransitGuard.Api` (Lokal-Modus, In-Memory, lädt `tests/fixtures/static_mini.zip`).
+## Build-Stand (22.08.2026, 9. Bausession — docs/27-build-log.md)
+**QA-Loop 5/5 grün** (`scripts/qa-loop.sh 5`, Exit 0) über **zwölf** Gates: Build · Backend-Tests · **Postgres-Tests** · Flutter-Analyze · Flutter-Tests · Web-Build · Acceptance · **Vertrag** · **Caddy-Auslieferung** · **PWA-Rauchtest** · **Service Worker** · **Flutter-Laufzeit**.
+Vier Zustände bleiben: grün / durch Fixer behoben / rot / **übersprungen** — eine fehlende Toolchain oder Datenbank ist nie ein Beweis.
 
-**Neu in Session 8:**
-- QA-Loop hatte sieben Defekte, drei davon **falsches Grün** (Flutter-Gates konnten strukturell nie rot werden; Test-Gate maskierte ein rotes Testprojekt). Gates liefern jetzt echte Exit-Codes und kennen vier Zustände (grün / durch Fixer behoben / rot / **übersprungen**). Eine fehlende Toolchain gilt nie als grün.
-- **UX-Überarbeitung** beider Kanäle: drei Ziele (Fahren > Warnen > Mehr) in einer Leiste am unteren Rand, Bottom-Sheets, Skeletons, deutsche Fehlertexte, hell+dunkel, Trefferflächen ≥ 48 px. PWA installierbar (Manifest + Icons), keine Google-Fonts-Abhängigkeit mehr. Oberfläche in `web/src/screens/` + `web/src/ui/`, Tokens in `web/src/styles.css`, Flutter-Spiegelung in `app/lib/theme.dart`.
-- **Auslieferung korrigiert (war launch-blockierend):** `deploy/Caddyfile` reicht `/v1/*`, `/health/*`, `/hubs/*` per `handle`-Block an die API — **Same-Origin, kein CORS** (das nirgends konfiguriert ist). `handle` ist Pflicht, nicht bloß ein Pfad-Matcher: Caddy führt `try_files` vor `reverse_proxy` aus. PWA **ohne** `VITE_API_URL` bauen. Absicherung: `scripts/verify-caddy.sh`.
-- **Release-AAB gebaut** (16-GB-Maschine): 50,4 MB, R8+Shrinker wieder AN, `mapping.txt` belegt keinen Rückbau-Schaden. Zwei Upload-Sperren: Sandbox-Key und `--dart-define=API_BASE` (Compile-Zeit-Konstante, liegt in `libapp.so`, **nicht** in `classes.dex`) — siehe `deploy/PLAY-CHECKLISTE.md`.
-- Belegt weiterhin aus früheren Sessions: PG16+PostGIS-Laufzeit inkl. RLS und Partitionen (22-build-log), SignalR-E2E, Hangfire-Sweep.
+## Vertragsdrift (NEU — zuerst lesen, bevor ein Feld geändert wird)
+Drei der vier Launch-Blocker waren Server/Client-Uneinigkeit über einen Feldvertrag. Die Fehlerklasse ist jetzt geschlossen:
+- **Maßgeblich ist `docs/contract/api-contract.json`** — aus der LAUFENDEN API aufgezeichnet (`verifikation/contract_capture.mjs`), nicht aus Attributen abgeleitet. OpenAPI-Codegen wurde mit Messbeleg verworfen: Swashbuckle liefert für 18/18 Operationen kein Antwortschema (anonyme Typen).
+- **PWA leitet ihre Typen ab** (`web/src/contract.gen.ts` → `web/src/api.ts`): eine Server-Umbenennung wird zum **Compile-Fehler**. Flutter nutzt `app/lib/contract.gen.dart` + Tests gegen die echten Beispielantworten.
+- **Nach jeder API-Änderung:** `node verifikation/contract_capture.mjs && node verifikation/contract_gen_ts.mjs && node verifikation/contract_gen_dart.mjs`, dann `scripts/verify-contract.sh`.
+- **Grenze:** Der Vertrag kennt nur Beobachtetes. Nullability, die die Fixture nie zeigt, fängt er nicht. Unbeobachtete Endpunkte sind als `unbeobachtet: true` ausgewiesen.
 
-**Neue Verifikations-Werkzeuge:** `verifikation/pwa_smoke.mjs` (echter Browser, hell+dunkel, gegen die Caddy-Konfiguration: Gate, Sperre, Melden, Klarnamen, Trefferflächen, Copy-Nie-Liste, Manifest) · `scripts/verify-caddy.sh` (6 Prüfungen der Auslieferung).
+## Werkzeuge (alle mit Gegenprobe belegt)
+`scripts/pg-dev.sh up` (PG16+PostGIS ohne Root, migriert, 23 s von Grund auf) · `scripts/verify-contract.sh` · `scripts/verify-caddy.sh` · `verifikation/pwa_smoke.mjs` · `verifikation/sw_offline.mjs` · `verifikation/flutter_web_smoke.mjs` · `verifikation/build_static_mini.py` (Fixture reproduzierbar) · `scripts/flutter-e2e.sh` (für Maschinen mit Gerät).
 
-**OFFEN:** Gerätetest der Flutter-App · Server-Erstdeploy · Echtdaten-StaticSync auf Prod-RAM · Anwalt F-1/F-18 · eigener Upload-Key + Play App Signing · SMTP · Hangfire-Postgres-Storage · T2.4-DB-Teil · Service-Worker (bewusst zurückgestellt: Cache darf keine Meldungsdaten halten).
+**Neu in Session 9 — fünf echte Fehler, zwei launch-blockierend:**
+- `/v1/billing/restore` war **dauerhaft kaputt**: Pfad auf der „offen"-Liste der Auth-Middleware ⇒ `DeviceId` nie aufgelöst ⇒ jeder Versuch `rate_limited`. Ohne Konten wäre ein zahlender Nutzer nach Gerätewechsel ausgesperrt gewesen (T-BILL-RESTORE).
+- **API stürzte mit `Ingest:Enabled=true` beim START ab**: `IIngestMetricsSink` ohne Implementierung/Registrierung (T-DI). Zusätzlich war der rt-poll-Cron `*/60 * * * * *` ungültig (Sekundenfeld 1–59) — Zeitpläne sind jetzt Konstanten mit Test (T-CRON).
+- Flutter warf `int is not a subtype of double?` bei Entfernung **0** (direkt an der Haltestelle) — alle Zahlenfelder lesen über `num`.
+- `/v1/journeys/{tripId}/warnings` liegt hinter dem Ticket-Gate (stand in keiner Doku).
+- Flutter verwarf `transfer_connections` stillschweigend — Umstiege wurden nie angezeigt.
 
-**Regel bleibt:** Schema-Änderungen IMMER gegen echtes PG validieren (22-build-log §2). Jeder Bugfix bekommt zuerst einen Testfall.
+**Belegt statt geglaubt:** PG16+PostGIS-Laufzeit inkl. RLS (Rollentrennung, Kill-Switch-Stufe 3), Partitionsanlage/-rotation und Retention · API im `Data:Provider=postgres`-Modus mit Acceptance 5/5 · Umstiege auf allen drei Ebenen mit **beiden** Liniennummern · Service Worker cacht nachweislich keine Meldungsdaten · Flutter-App läuft im echten Browser gegen die echte API.
+
+**Fixture:** `tests/fixtures/static_mini.zip` wird von `verifikation/build_static_mini.py` erzeugt — 5 Halte, 147 Fahrten, HHA1→HHA5 erzwingt einen Umstieg. Wer sie ändert, zieht die Kennzahlen in den Ingest-Tests nach.
+
+**OFFEN:** Gerätetest der Flutter-App (Android/R8 weiterhin **unbelegt** — kein KVM im Container) · Server-Erstdeploy · Echtdaten-StaticSync auf Prod-RAM · Anwalt F-1/F-18 · eigener Upload-Key + Play App Signing · SMTP · Hangfire-Postgres-Storage · T2.4-DB-Teil.
+
+**Regel bleibt:** Schema-Änderungen IMMER gegen echtes PG validieren (`scripts/pg-dev.sh up`). Jeder Bugfix bekommt zuerst einen Testfall. Jede neue Prüfung braucht eine Gegenprobe am kaputten Zustand.
 
 ## Teststrategie
 Core = xUnit tabellengetrieben (Kreis: TtlEngine/Normalizer/TrustEngine); Api-Integration gegen docker-compose-Postgres; Fixtures aus echten Feed-Mitschnitten (`verifikation/`-Skripte erzeugen sie); E2E-Checkliste Stage. kein CI — `scripts/test.sh` ist das Gate.
