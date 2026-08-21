@@ -1,0 +1,260 @@
+openapi: 3.1.0
+info:
+  title: TransitGuard API
+  version: 1.0.0 (Entwurf, implementierungsreif)
+  description: >
+    ÖPNV-Companion-API. Meldungs-Ressourcen sind no-store. Auth via X-Device-Token;
+    Pro-Endpunkte via Bearer-Entitlement-Token. Vollständige Semantik: docs/04-api.md.
+servers:
+  - url: https://api.example.de
+  - url: https://api.example.de/{basePath}
+    variables: { basePath: { default: v1, enum: [v1] } }
+security:
+  - deviceToken: []
+tags:
+  - { name: infra }
+  - { name: schedule }
+  - { name: reports }
+  - { name: alerts }
+  - { name: device }
+  - { name: billing }
+paths:
+  /health/live: { get: { tags: [infra], security: [], responses: { "200": { description: ok } } } }
+  /health/ready: { get: { tags: [infra], security: [], responses: { "200": { description: ok }, "503": { description: not ready } } } }
+
+  /v1/cities:
+    get:
+      tags: [schedule]
+      responses:
+        "200":
+          description: Aktive Städte
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/City" } } } }
+  /v1/cities/{slug}/stops:
+    get:
+      tags: [schedule]
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: lat, in: query, schema: { type: number } }
+        - { name: lon, in: query, schema: { type: number } }
+        - { name: radius, in: query, schema: { type: integer, default: 1000 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        "200": { description: Haltestellen, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Stop" } } } } }
+  /v1/stops/{stopId}:
+    get:
+      tags: [schedule]
+      parameters: [ { name: stopId, in: path, required: true, schema: { type: string } } ]
+      responses: { "200": { description: Haltestelle, content: { application/json: { schema: { $ref: "#/components/schemas/Stop" } } } } }
+  /v1/stops/{stopId}/departures:
+    get:
+      tags: [schedule]
+      parameters:
+        - { name: stopId, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 50 } }
+      responses:
+        "200":
+          description: Abfahrten Soll+Ist mit trip_ref
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Departure" } } } }
+
+  /v1/reports:
+    post:
+      tags: [reports]
+      parameters: [ { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ReportCreate" } } }
+      responses:
+        "201": { description: erstellt, content: { application/json: { schema: { $ref: "#/components/schemas/ReportFree" } } } }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /v1/reports/{id}:
+    get:
+      tags: [reports]
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        "200": { description: Tier-geformt (Free ohne Pro-Felder, Pro mit), content: { application/json: { schema: { oneOf: [ { $ref: "#/components/schemas/ReportFree" }, { $ref: "#/components/schemas/ReportPro" } ] } } } }
+  /v1/reports/{id}/events:
+    post:
+      tags: [reports]
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [type], properties: { type: { type: string, enum: [confirm, contradict] } } } } }
+      responses: { "204": { description: registriert }, "429": { $ref: "#/components/responses/RateLimited" } }
+  /v1/cities/{slug}/reports:
+    get:
+      tags: [reports]
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: bbox, in: query, description: "minLon,minLat,maxLon,maxLat", schema: { type: string } }
+        - { name: active, in: query, schema: { type: boolean, default: true } }
+        - { name: since_id, in: query, schema: { type: integer } }
+        - { name: limit, in: query, schema: { type: integer, default: 100, maximum: 200 } }
+      responses:
+        "200": { description: Tier-geformte Liste, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ReportFree" } } } } }
+  /v1/cities/{slug}/events:
+    get:
+      tags: [reports]
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: since_id, in: query, schema: { type: integer } }
+        - { name: limit, in: query, schema: { type: integer, default: 200, maximum: 1000 } }
+      responses:
+        "200": { description: Ereignisstrom ab Kursor, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ReportEvent" } } } } }
+
+  /v1/cities/{slug}/alerts:
+    get:
+      tags: [alerts]
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: route_id, in: query, schema: { type: string } }
+        - { name: stop_id, in: query, schema: { type: string } }
+      responses:
+        "200": { description: gefilterte Alerts (kein Rauschen), content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Alert" } } } } }
+
+  /v1/devices:
+    post:
+      tags: [device]
+      security: []
+      responses: { "201": { description: Device+Token (Token nur hier sichtbar), content: { application/json: { schema: { $ref: "#/components/schemas/DeviceIssued" } } } } }
+  /v1/devices/me:
+    get: { tags: [device], responses: { "200": { description: Trust-Profil, content: { application/json: { schema: { $ref: "#/components/schemas/DeviceMe" } } } } } }
+    delete: { tags: [device], responses: { "204": { description: gelöscht/anonymisiert } } }
+
+  /v1/billing/activate:
+    post:
+      tags: [billing]
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [platform, receipt], properties: { platform: { type: string, enum: [apple, google] }, receipt: { type: string } } } } }
+      responses:
+        "201": { description: Entitlement ausgestellt, content: { application/json: { schema: { $ref: "#/components/schemas/EntitlementIssued" } } } }
+        "402": { description: receipt_invalid }
+        "409": { description: receipt_already_used }
+  /v1/billing/restore:
+    post:
+      tags: [billing]
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [restore_code], properties: { restore_code: { type: string } } } } }
+      responses: { "201": { description: neues Token, content: { application/json: { schema: { $ref: "#/components/schemas/EntitlementIssued" } } } }, "403": { description: restore_invalid } }
+  /v1/billing/validate:
+    post:
+      tags: [billing]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [token], properties: { token: { type: string } } } } }
+      responses: { "200": { description: Status, content: { application/json: { schema: { $ref: "#/components/schemas/EntitlementStatus" } } } } }
+
+components:
+  securitySchemes:
+    deviceToken: { type: apiKey, in: header, name: X-Device-Token }
+    entitlementToken: { type: http, scheme: bearer, bearerFormat: "et_…" }
+  responses:
+    ValidationError: { description: 422, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    RateLimited: { description: 429, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  schemas:
+    Error:
+      type: object
+      properties: { code: { type: string }, message: { type: string }, details: { type: object } }
+    City:
+      type: object
+      properties:
+        city_id: { type: string }
+        slug: { type: string }
+        display_name: { type: string }
+        flags: { type: object, additionalProperties: { type: boolean } }
+    Stop:
+      type: object
+      properties:
+        stop_id: { type: string }
+        stop_name: { type: string }
+        lat: { type: number }
+        lon: { type: number }
+        routes: { type: array, items: { type: string } }
+    Departure:
+      type: object
+      properties:
+        trip_ref: { type: object, properties: { trip_id: { type: string }, start_date: { type: string, pattern: '^\\d{8}$' } } }
+        route_id: { type: string }
+        headsign: { type: string }
+        scheduled_time: { type: string, format: date-time }
+        estimated_time: { type: [string, "null"], format: date-time }
+        delay_s: { type: [integer, "null"] }
+        realtime: { type: boolean }
+    ReportCreate:
+      type: object
+      required: [city_slug, anchor_type, report_type, vehicle_kind, station]
+      properties:
+        city_slug: { type: string }
+        anchor_type: { type: string, enum: [station, trip] }
+        report_type: { type: string, enum: [in_vehicle, on_platform, at_stop] }
+        vehicle_kind: { type: string, enum: [rail, bus] }
+        station: { type: object, required: [stop_id], properties: { stop_id: { type: string }, geo: { $ref: "#/components/schemas/LatLon" } } }
+        trip: { type: object, properties: { trip_id: { type: string }, start_date: { type: string }, route_id: { type: string }, direction_id: { type: integer }, headsign: { type: string } } }
+        inspector_count: { type: integer, minimum: 1, maximum: 8 }
+        client:
+          type: object
+          required: [ticket_confirmed]
+          properties:
+            ticket_confirmed: { type: boolean, description: 'Pflicht: Bestätigung gültiger Fahrschein (Ticket-First-Gate, docs/18)' }
+            app_version: { type: string }
+            platform: { type: string, enum: [ios, android, web] }
+    LatLon: { type: object, required: [lat, lon], properties: { lat: { type: number }, lon: { type: number } } }
+    ReportFree:
+      type: object
+      description: Free-Form — Pro-Felder fehlen physisch (Kontrakt, docs/04 §3)
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        anchor_type: { type: string, enum: [station, trip, derived_terminus] }
+        station_name: { type: string }
+        route_id: { type: string }
+        headsign: { type: string }
+        report_type: { type: string }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        status: { type: string }
+        origin: { type: string, enum: [user, derived] }
+        trip_id: { type: string }
+        trip_start_date: { type: string }
+    ReportPro:
+      allOf:
+        - $ref: "#/components/schemas/ReportFree"
+        - type: object
+          properties:
+            inspector_count: { type: integer }
+            reporter_trust: { type: number }
+            reporter_rank: { type: integer }
+            movement: { type: object, description: interpolierter Verlauf + ETA, properties: { last_stop_id: { type: string }, eta_next_stop_s: { type: integer }, path: { type: array, items: { type: object } } } }
+    ReportEvent:
+      type: object
+      properties:
+        event_id: { type: integer }
+        report_id: { type: string, format: uuid }
+        type: { type: string, enum: [created, confirmed, contradicted, ttl_extended, degraded, expired, cancelled] }
+        created_at: { type: string, format: date-time }
+        payload: { type: object }
+    Alert:
+      type: object
+      properties:
+        header: { type: string }
+        description: { type: string }
+        url: { type: string }
+        severity: { type: string, enum: [info, warning, severe] }
+        route_refs: { type: array, items: { type: string } }
+        until: { type: [string, "null"], format: date-time }
+    DeviceIssued:
+      type: object
+      properties: { device_id: { type: string, format: uuid }, device_token: { type: string } }
+    DeviceMe:
+      type: object
+      properties: { trust_score: { type: number }, rank: { type: string, enum: [neuling, scout, waechter, legende] }, total_reports: { type: integer } }
+    EntitlementIssued:
+      type: object
+      properties: { access_token: { type: string }, restore_code: { type: string }, tier: { type: string }, valid_until: { type: [string, "null"], format: date-time } }
+    EntitlementStatus:
+      type: object
+      properties: { tier: { type: string, enum: [free, pro] }, valid_until: { type: [string, "null"], format: date-time }, status: { type: string } }

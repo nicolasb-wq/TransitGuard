@@ -1,0 +1,8 @@
+RT: 47,900,916 B, 82,306 TUs @ 2026-08-21T10:04:59+00:00
+Stadt             TUs jetzt  mit Delay  Delay-%
+Hamburg (Kern)        3,735     37,901  1014.8%
+Berlin (Stadt)          984      9,136   928.5%
+Muenchen              2,716     21,499   791.6%
+Koeln                 2,188     35,039  1601.4%
+Frankfurt             2,178      9,726   446.6%
+Dresden               1,031     20,237  1962.9%

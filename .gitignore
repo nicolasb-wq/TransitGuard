@@ -1,0 +1,4 @@
+
+# Sandbox-lokaler Upload-Key (NICHT fuer Produktion — Dev-Maschine: eigener Key + Play App Signing)
+android/key.properties
+android/app/upload-keystore.jks

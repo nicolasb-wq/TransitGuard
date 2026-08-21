@@ -1,0 +1,24 @@
+Static trips gesamt: 1,772,222
+Static stops geladen: 677,849
+RT-Feed: 46,979,469 B @ 2026-08-21T10:03:50+00:00
+
+=== J6: MATCH-RATE Static<->RT ===
+TUs: 82,568 | im Static auflosbar: 82,568 (100.0 %) | nach Feed: {'nv': 76210, 'rv': 6192, 'fv': 166}
+TUs mit Delay: 80,640 (97.7 %) | Stop-Lookup ok/miss: 875,527/15
+
+=== J3: HAMBURG-ANTEIL (geografisch via STU-Stop-IDs) ===
+TUs mit >=1 Stop im KERN-bbox:    3,740 (4.5 % aller TUs)
+TUs mit >=1 Stop im UMGEB-bbox:   4,319 (5.2 % aller TUs)
+distinct HH-Kern-Trips: 3,740 | davon mit Delay: 3,533 (94.5 %)
+
+HH-Kern Trips nach Static-Feed: {'nv': 3480, 'rv': 218, 'fv': 42}
+Top-12 Agenturen im HH-Kern (distinct Trips):
+   3,479  Hamburger Verkehrsverbund
+      88  S-Bahn Hamburg
+      42  DB Fernverkehr AG
+      36  DB Regio AG Nord
+      32  Nordbahn Eisenbahngesellschaft
+      29  metronom
+      29  AKN Eisenbahn AG
+       4  DB Regio AG Nordost
+       1  Autokraft Kiel

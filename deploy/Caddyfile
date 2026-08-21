@@ -1,0 +1,19 @@
+api.example.de {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:5080 {
+        header_up X-Forwarded-Proto {scheme}
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        # keine CSP-Header hier — App-spezifisch siehe PWA-Build (nonce-basiert)
+    }
+    # SignalR-WebSockets: Caddy handled Upgrade automatisch
+}
+app.example.de {
+    root * /srv/pwa
+    try_files {path} /index.html
+    file_server
+    # Service-Worker-Build ohne Meldungsdaten (B8): API-Calls immer live
+}

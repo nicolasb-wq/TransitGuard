@@ -1,0 +1,21 @@
+# /etc/systemd/system/transitguard.service
+[Unit]
+Description=TransitGuard API+Ingest
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=transitguard
+Group=transitguard
+WorkingDirectory=/opt/transitguard/current
+EnvironmentFile=/opt/transitguard/shared/.env
+ExecStart=/opt/transitguard/current/TransitGuard.Api
+Restart=always
+RestartSec=5
+LimitNOFILE=16384           # SignalR-Verbindungen
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/transitguard/shared/logs
+
+[Install]
+WantedBy=multi-user.target

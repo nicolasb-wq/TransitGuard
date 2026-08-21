@@ -1,0 +1,56 @@
+gtfs.de HTTP 200 | 41,721,651 B | 2026-08-21T09:40:12+00:00
+Alerts: 96,400 | Dedup-Schluessel (header+desc[:150]) distinct: 519 (0.54 %)
+Header UND Description leer: 0 (0.0 %)
+Top-10 Dedup-Gruppen:
+   64,246x | (leer) | desc: Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von DELFI
+   12,900x | (leer) | desc: Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von Verkehrsverbund Bremen
+    3,137x | (leer) | desc: Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von Verkehrsverbund Rhein-
+    2,787x | (leer) | desc: Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von Verkehrsverbund Rhein-
+    1,541x | (leer) | desc: Rollstuhlgeeignet
+    1,513x | (leer) | desc: Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von Verkehrsverbund Rhein-
+    1,414x | (leer) | desc: Niederflur
+    1,373x | (leer) | desc: NIEDERFLUR
+    1,274x | (leer) | desc: Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von Nahverkehrsgesellschaf
+      588x | (leer) | desc: Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von VAG Nürnberg
+
+Volltext-Stichprobe (12 zufaellig verteilte Nicht-Standard-Alerts):
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Sommerrain - Nürnberger Straße: in der Nacht Haltausfälle wegen Instandhaltungsmaßnahmen
+    D: Wegen Instandhaltungsmaßnahmen entfallen in der Nacht 26./27. August 2026 von 22:00 bis 04:20 Uhr die Halte am Sommerrain und an der Nürnberger Straße in Richtu
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Haltestellenverlegung durch Baumaßnahme
+    D: Linien 253, 254 und 258: An der (H) Gladbeck, Hegestr. kommt es zu einer Haltestellenverlegung.
+
+ Dauer: 19.08.26, 03:00 Uhr bis 31.08.26, 23:50 Uhr
+
+Die Haltes
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Fahrradmitnahme begrenzt möglich
+    D: Fahrradmitnahme begrenzt möglich
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Behindertengerechtes Fahrzeug
+    D: Behindertengerechtes Fahrzeug
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Karlsruhe - Bruchsal / Pforzheim: Erhebliche Einschränkungen Ende der Sommerferien 2026
+    D: (AVG) Wegen umfangreicher Bauarbeiten der DB InfraGO kommt es in den letzten beiden Sommerferienwochen zu erheblichen Einschränkungen im Stadtbahn- und Regional
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Stuttgart-Vaihingen/Mühlhausen: Stadtbahnlinie U14 fährt an den Sonntagen nach dem Samstagsfahrplan
+    D: Von Sonntag, 26. Juli 2026, bis Sonntag, 6. September 2026, fährt die Stadtbahnlinie U14 in der Zeit der S-Bahn-Stammstreckensperrung an allen Sonntagen nach de
+--- cause=2 effect=8 severity=3 informed_entities=1
+    H: Unbefugte Personen auf der Strecke
+    D: Unbefugte Personen auf der Strecke
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Bauarbeiten mit Haltestellenausfall auf der Linie 620, 640 und 641
+    D: Ab 22.06.2026 können die Haltestellen Sulzburg/Bahnhof, Sulzburg/Marktplatz und Sulzburg/Ernst-Leitz-Schule wegen Sanierungsarbeiten an der Fliederbachbrücke ni
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Das Deutschlandticket und Fahrscheine des bwtarifs gelten auf der Fähre nur, wenn man mit dem Bus auf das Schi
+    D: Das Deutschlandticket und Fahrscheine des bwtarifs gelten auf der Fähre nur, wenn man mit dem Bus auf das Schiff gelangt und es mit dem Bus wieder verlässt. Wäh
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: WLAN verfügbar
+    D: WLAN verfügbar
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Feuerbach - Kornwestheim: in der Nacht Haltausfälle und Gleisänderungen wegen Bahnsteigarbeiten
+    D: Wegen Bahnsteigarbeiten entfallen bei der S5 in der Nacht 17./18. September 2026 die Halte um 00:34 und 01:04 Uhr in Feuerbach Richtung Ludwigsburg. Außerdem ha
+--- cause=1 effect=8 severity=2 informed_entities=1
+    H: Ludwigsburg: ab 04.07.26 verkehrt die Linie 424 nicht mehr über die Innenstadt zum ZOB.
+    D: Aufgrund erheblicher verkehrsbedingter Verspätungen, verkehrt die Linie 424, ab dem 04.07.26 bis auf weiteres nicht mehr über die Innenstadt zum ZOB. Die Haltes

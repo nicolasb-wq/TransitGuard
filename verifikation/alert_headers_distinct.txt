@@ -1,0 +1,427 @@
+92460	
+377	Fahrradmitnahme begrenzt möglich
+200	Fahrzeuggebundene Einstiegshilfe vorhanden
+160	Komfort Check-in verfügbar - wenn möglich bitte einchecken
+150	Bordrestaurant
+139	WLAN verfügbar
+129	Fahrradmitnahme reservierungspflichtig
+78	Klimaanlage
+70	Umleitungen durch Baumaßnahme
+60	nur 2. Kl.
+58	Behindertengerecht
+49	Zuffenhausen Kelterplatz - Pragsattel: Streckensperrung und Ersatzverkehr wegen Weichen-Erneuerungsarbeiten
+44	Stuttgart-Süd: Gesperrte Zugänge wegen weiterer Bauarbeiten
+44	Behindertengerechtes Fahrzeug
+41	U-Bahnen halten bis auf Weiteres nicht am U-Bahnhof "Nordstraße"
+39	Ludwigsburg: Künstlerprozession am 04.09.2026 Einschränkungen im Linienverkehr.
+38	Niederflurbus, für Rollstuhlfahrer geeignet
+38	Ulm Hauptbahnhof: Bahnhofshalle wegen Umbau bis vsl. 2026 gesperrt
+33	Ersatzverkehr
+33	Reparatur an der Strecke
+30	Geislingen - Göppingen: nächtliche Zugausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+29	Verspätung eines vorausfahrenden Zuges
+28	Laptop-Steckdosen
+27	Aufzug außer Betrieb
+26	Fahrzeuggebundene Einstiegshilfe in der Zugmitte
+26	Beförderung von Gruppen eingeschränkt
+25	Ostfildern: Geänderter Fahrplan wegen Veranstaltung
+25	Hauptbahnhof - Vaihingen: Fahrplanänderungen und Ersatzverkehr wegen der Sperrung der S-Bahn-Stammstrecke
+24	Fahrzeugstörung: Verzögerungen auf der Linie 107.
+24	Ulm - Stuttgart: nächtliche Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+24	Stuttgart - Aalen/Crailsheim: nächtliche Zugausfälle wegen Instandhaltungsmaßnahmen
+23	Hohes Verkehrsaufkommen: Verzögerungen auf der Linie 101.
+23	Stuttgart-Nord: Linie 43 fährt wieder regulär
+22	Linie 5: Kürzung bei Stau bis auf Weiteres
+22	Stuttgart-Vaihingen: Verlängerung Stadtbahnlinie U1 wegen S-Bahn-Stammstreckensperrung
+22	Karlsruhe - Bruchsal / Pforzheim: Erhebliche Einschränkungen Ende der Sommerferien 2026
+22	Stuttgart-Vaihingen/Mühlhausen: Stadtbahnlinie U14 fährt an den Sonntagen nach dem Samstagsfahrplan
+22	Stuttgart-West: Streckenunterbrechung und Ersatzverkehr mit Bussen wegen Bauarbeiten
+21	Einstieg mit Rollstuhl mit fahrzeuggebundener Einstiegshilfe
+21	Keine Fahrradbeförderung
+20	Einstiegshilfe - Bitte im ersten Fahrzeug einsteigen
+20	Karlsruhe: Bauarbeiten im VBK-Netz während der Sommerferien (Phase 2)
+20	Fahrzeuggebundene Einstiegshilfe am Zuganfang
+20	Haltestellenverlegung durch Baumaßnahme
+19	Linie 400: Baumaßnahme Friedrich-Uhde-Straße
+19	Linien 400, 401: Sperrung Kronprinzenstraße wegen Arbeiten an Versorgungsleitungen
+19	Linie 400: Sperrung Lange Straße wegen Reparatur einer Gasleitung
+19	Klimanlage, Fahrgast W-LAN
+19	Rollstuhlstellplatz
+18	Einstieg mit Rollstuhl stufenfrei
+18	Niederflurwagen
+18	Karlsruhe: Anpassungen im Fahrplanangebot ab 30. Juli 2026
+18	Hauptbahnhof (tief) - Vaihingen, Vaihingen - Herrenberg: in der Nacht Zugausfälle und Umleitungen wegen Instandhaltungsmaßnahmen
+18	Tübingen - Plochingen/Bad Urach: nächtliche Zugausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+17	Stufenloses Fahrzeug, WLAN
+17	Söllingen - Pforzheim Hbf: S5/S51 - Teilausfälle im Nachtverkehr
+17	Vorübergehend verminderte Geschwindigkeit auf der Strecke
+17	S-Bahn: Überleitungsfahrplan nach der Stammstreckensperrung
+17	Rheinbahn-Fahrplan in den Sommerferien
+16	Ruhezone
+16	ICE Sprinter
+16	Bietigheim - Ludwigsburg: Streckensperrung wegen Brückenarbeiten
+15	Haltestelle "Bilker Kirche, Steig 3" wird verlegt
+15	U79: Ersatzbusse und eingleisiger Betrieb zwischen "Betriebshof Grunewald" und "Im Schlenk"
+15	Information.
+15	Umleitung durch Baumaßnahme
+14	Ulm - Geislingen: nächtliche Zugausfälle mit Ersatzverkehr wegen Oberleitungsarbeiten
+14	Verspätung aus vorheriger Fahrt
+14	Haltestellenveränderungen durch Baumaßnahme
+14	Ludwigsburg: Vollsperrung der B27 Umleitung Linie 427.
+13	Snacks und Getränke am Platz
+13	Intercity 2: Info unter www.bahn.de/ic2
+13	Ersatzverkehr durch Betriebsstörung
+13	Ersatzverkehr durch Baumaßnahme
+13	Ludwigsburg/Bad Cannstatt - Hauptbahnhof: in der Nacht Fahrplanänderungen wegen Instandhaltungsmaßnahmen
+13	Sperrung des Pragtunnels - Änderungen im S-Bahn Verkehr S4 - S6 vom 15.08. - 21.08.
+13	Strecke zw. Sechtem und Brühl beeinträchtigt - Unregelmäßigkeiten bei Bauarbeiten
+13	Linien 641, 642, 648HN, 651, 661, 662, 682 und 683: Änderung wegen einer Störungen im Betriebsablauf
+12	Linien 057 und NE6: Weiträumige Umleitung in KR-Oppum – Haltestellen entfallen oder werden verlegt
+12	Haltestelle "Jacobistraße, Steig 2" wird verlegt
+12	Umleitung: Linie 834 weicht in Flingern ab
+12	Fahrtausfälle im Spätverkehr am 25.08. beim MEX13 und 16
+12	Buslinien 170, 186, NE12 und NE15 werden umgeleitet
+12	Buslinie 186 wird umgeleitet
+12	Gerlingen - Flughafen/Messe: Ganztägig Doppelzüge mit mehr Sitzplätzen
+11	Wörth Badepark  - Knielingen Rheinbergstraße: S5  Einzelne Züge entfallen auf Teilabschnitt ab 04:00 Uhr
+11	Wörth (Rhein) - Wörth Badepark: S5 Teilabschnitt entfällt ab 22:00 Uhr
+11	Linie 6: Kürzung bei Stau bis auf Weiteres
+11	Linie 041: Gleisbauarbeiten zwischen Wilhelmplatz und Oberbenrad. Schienenersatzverkehr, Umleitung und Haltestellenausfall
+11	Linien 423, E439: Sperrung Am Brandhof (Grevel Schleife) wegen Kanalbauarbeiten
+11	Nächte 14./15., 16./17. und 21./22. September 2026: Fahrplanänderungen wegen Baumaßnahmen
+10	Störung.
+10	Bauarbeiten
+10	Niederflurfahrzeug
+10	Schorndorf: Zugang zur Bahnhofsunterführung von der Grabenstraße gesperrt
+10	Kornwestheim und Feuerbach: am Morgen Haltausfälle wegen Bauarbeiten
+10	Marbach bzw. Bietigheim - Schwabstraße: 30-Minuten-Takt wegen einer Baugrunduntersuchung
+10	Feuerbach: nächtliche Haltausfälle wegen Bauarbeiten
+10	Information: Südunterführung des Augsburger Hauptbahnhofs ab 3. August 2026 längerfristig gesperrt
+9	Kirmes in Moers
+9	Technische Störung am Zug
+9	Fahrplanänderung wegen Sperrung der Oberen Anlage ab Montag, 03.08.2026
+9	Keine Mitnahme von Elektro-Tretrollern
+9	Zustieg im Nahverkehr (REX, R, S-Bahn) nur mit gültiger Fahrkarte
+9	Rollstuhlstellplatz - Voranmeldung unter +43 5 1717
+9	Zugang für Rollstuhlfahrer
+9	Kirchheim (T) - Plochingen: in der Nacht Zugausfälle mit Ersatzbussen wegen Bauarbeiten
+9	Mettingen - Neckarpark: nächtliche Haltuasfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+9	Behindertengerechte Ausstattung
+9	Verspätete Bereitstellung des Zuges
+9	Bahnhof Heidelberg, Hauptbahnhof: Rolltreppe von Brücke nach Gleis 7+8 außer Betrieb
+8	Hafenfest mit Höhenfeuerwerk in Duisburg -Ruhrort
+8	Haltestellenausfälle durch Baumaßnahme
+8	Linie 10: Kürzung bei Stau bis auf Weiteres
+8	Bau Zähringer Str.
+8	Linie SEV S1: Ersatzverkehr
+8	Linie SEV S1: Behindertengerechtes Fahrzeug
+8	Lidl-Deutschland-Tour am 20. und 21. August in Schwäbisch Hall
+8	Schwäbisch Gmünd: Fahrplanänderungen wegen Bauarbeiten
+7	Niederflurfahrzeug / Rollstuhlgeeignet
+7	Linie RB48: Fahrradmitnahme begrenzt möglich
+7	Linie RB48: Behindertengerechtes Fahrzeug
+7	Linie RB48: Rollstuhlstellplatz
+7	Linie RB48: rollstuhltaugliches WC
+7	Linie RB48: Laptop-Steckdosen
+7	Linie RB48: Klimaanlage
+7	Stuttgert - Ulm: nächtliche Fahrplanänderungen mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+7	Umleitungen für die Buslinien SB50, 780, 782, 785, 805, 817, NE3, NE5 und NE7
+7	keine Fahrradbeförderung möglich
+7	Mettingen bzw. Fellbach - Bad Cannstatt: in der Nacht Fahrplanänderungen wegen Bauarbeiten
+7	Bad Cannstatt - Esslingen/Fellbach sowie Waiblingen - Backnang: in der Nacht Fahrplanänderungen wegen Instandhaltungsmaßnahmen
+7	Nicht barrierefreies Fahrzeug, WLAN
+7	Update Linie 422: Bauarbeiten Schorndorfer Straße / Harteneckstraße.
+6	RS3, RE55: SEV Allmendingen - Herbertingen vom 14.09. bis 25.10.2026
+6	RS3, RE55: SEV Blaubeuren - Ehingen vom 23.10. bis 09.11.2026
+6	RS3, RE55: SEV Ulm Hbf - Schelklingen vom 30.07. bis 13.09.2026
+6	Esslingen .- Stuttgart: in der Nacht Zugausfälle wegen Instandhaltungsmaßnahmen
+6	Stuttgart: Haltestelle Albert-Luthuli-Platz entfällt
+6	Knielingen Rheinbergstraße - Wörth (Rhein) : S51 - Eine Verbindung fährt ca. 5 Minuten früher
+6	Wörth (Rhein) - Germersheim: S51 Teilabschnitt entfällt ab 22:00 Uhr
+6	Germersheim: Erweitertes Angebot zum Stadtjubiläum 750 Jahre
+6	MEX 16: SEV Ulm Hbf <> Geislingen vom 24.08. bis 06.09.2026
+6	Geislingen - Göppingen und Ulm - Geislingen: Zugausfälle mit Ersatzverkehr wegen Bauarbeiten
+6	Geislingen - Göppingen: am Abend und in der Nacht Zugausfälle mit Ersatzbussen wegen Bauarbeiten
+6	Ulm - Göppingen: Fahrplanänderungen wegen Instandhaltungsmaßnahmen
+6	Linie RE19: Fahrradmitnahme begrenzt möglich
+6	Deutschlandticket gültig (ohne Mitnahmeregelung)
+6	Niederflurfahrzeug, soweit verfügbar
+6	bedingt rollstuhltaugliches WC
+6	Kirchheim (T) - Plochingen: nächtliche Zugausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+6	Linie 262: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+6	Ludwigsburg - Kornwestheim: am Morgen Zugausfall wegen Gleisarbeiten
+6	Feuerbach - Kornwestheim: in der Nacht Haltausfälle und Gleisänderungen wegen Bahnsteigarbeiten
+6	Bei Fahrradmitnahme Sperrzeiten beachten
+6	Haltestelle "Engerstraße, Steig 3" wird verlegt
+6	Urbach - Stuttgart: nächtliche Zugausfälle wegen Bauarbeiten
+6	Bus 411, 412, 421, 422: Geänderte Linienführung im Bereich Aisingerwies (24.08.26 - vsl. Mitte 2027)
+6	Tübingen - Reutlingen bzw. Plochingen: Fahrplanänderungen wegen Bauarbeiten
+6	Linie RE13: Fahrradmitnahme begrenzt möglich
+6	Linie RE13: Fahrzeuggebundene Einstiegshilfe vorhanden
+6	Linie RE13: Behindertengerechte Ausstattung
+6	Linie RE13: Laptop-Steckdosen
+6	Linie RE13: Klimaanlage
+6	Linien 1, 3, 4, 700, 710 und R70: Haltausfall wegen einer Baustelle
+6	Bahnhof Mannheim, Hauptbahnhof: Aufzug von Gleis 7+8 nach Unterführung Nord außer Betrieb
+6	Haltestellen verlegt/aufgehoben
+5	Vollsperrung der Lindenstraße in Neukirchen-Vluyn
+5	Eltingen: Haltestellen Tiroler Straße - Hirschberger Straße entfallen
+5	Gerlingen/Leonberg: Umleitung wegen Veranstaltung
+5	ab 24.08.: Bau Schlüsselstraße
+5	Das Deutschlandticket gilt nicht im grenzüberschreitendenen Verkehr
+5	Fahrt verkehrt über die Schweiz. Bei Grenzübertritt, auch im Transit, sind stets gültige Ausweisdokumente mitzuführen.
+5	Das Generalabo gilt nicht im grenzüberschreitendenen Verkehr
+5	RS5 | RE50: SEV Giengen <> Heidenheim vom 30.07. bis 12.09.2026
+5	Linie S28: Fahrradmitnahme begrenzt möglich
+5	Fahrzeug behindertengerecht
+5	S1/S2/S3/S4/S5/S6/S7/S8/S20 - Ersatzverkehr, Zugausfälle und Umleitungen zwischen Pasing und Donnersbergerbrücke/Ostbahnhof (18. bis 25. August Durchgehend)
+5	Linien 300, 302 und 404: Umleitung wegen einer Baustelle
+5	460, 461, 469, 470, NE11 und NE13: Vollsperrung der Zollernstraße
+5	Gepäckmitnahme eingeschränkt
+5	Linie RE5 (RRX): Fahrradmitnahme begrenzt möglich
+5	Linie RE5 (RRX): Behindertengerechtes Fahrzeug
+5	Linie RE5 (RRX): Rollstuhlstellplatz
+5	Linie RE5 (RRX): rollstuhltaugliches WC
+5	Linie RE5 (RRX): Laptop-Steckdosen
+5	Linie RE5 (RRX): Klimaanlage
+5	Linie RE5 (RRX): WLAN verfügbar
+5	Technischer Defekt an einem anderen Zug
+5	Kanalsanierungsmaßnahme: Rheinberger Straße (Moers-Mitte)
+5	Aufzug 4 Freiburg Hbf außer Betrieb
+4	Ludwigsburg: ab 04.07.26 verkehrt die Linie 424 nicht mehr über die Innenstadt zum ZOB.
+4	Ersatzzug
+4	Stau / Hohes Verkehrsaufkommen
+4	Kleinbus
+4	Toilette an Bord
+4	Sommerrain, Nürnberger Straße: nächtliche Haltausfälle wegen Instandhaltungsmaßnahmen
+4	Sommerrain - Nürnberger Straße: in der Nacht Haltausfälle wegen Instandhaltungsmaßnahmen
+4	Schorndorf/Waiblingen - Bad Cannstatt: nächtliche Fahrplanänderungen wegen Bauarbeiten
+4	Fahrradreservierung unter 030 2970 oder in Reisezentren + DB Agenturen
+4	Ab 4. Mai: Fahrplananpassungen - Linie 7257
+4	Linie S7: Fahrradmitnahme begrenzt möglich
+4	Reparatur an einer Weiche
+4	rollstuhltaugliches WC
+4	Fahrzeuggebundene Einstiegshilfe
+4	Vaihingen (Enz) - Kralrsruhe Hbf: nächtliche Fahrplanänderungen wegen Bauarbeiten
+4	Böblingen - Renningen: nächtliche Zugausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+4	Bus 407, 427: Geänderte Linienführung im Bereich Aisingerwies (24.08.26 - vsl. Mitte 2027)
+4	Stufenloses Fahrzeug, WLAN, WC
+4	Linie SEV R10A: Ersatzverkehr
+4	Linie SEV R10A: Gepäckmitnahme eingeschränkt
+4	Linie SEV R10A: Behindertengerechtes Fahrzeug
+4	Linie SEV R10A: WLAN verfügbar
+4	Backnang - Marbach bzw. Ludwigsburg: nächtliche Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+4	Backnang - Marbach: Streckensperrung mit Ersatzverkehr wegen Bauarbeiten
+4	Teilausfall der S4 im Abendverkehr zwischen Backnang und Marbach vom 3.8. - 23.8.
+4	Linie SB91: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+4	Vorfahrt eines anderen Zuges
+4	Linien 400 und 401: Umleitung wegen Baumaßnahmen
+4	Die Bedarfshaltestelle Freibad wird nur angefahren, wenn an diesem Tag bereits ein Fahrgast dorthin gefahren wurde.
+4	Bahnhof Stadtmitte: Rolltreppe von Zw.Theo-Passage nach S-Bahn Gleis 1&2 außer Betrieb
+4	Bahnhof Stadtmitte: Aufzug von S-Bahn nach Unterführung Süd außer Betrieb
+4	Bahnhof Stadtmitte: Rolltreppe von Zw.geschoss S-Bahn nach S-Bahn Gleis 1&2 außer Betrieb
+3	Buslinien 136, NE1 und NE3 (Mülheim) werden umgeleitet
+3	Kein gastronomisches Angebot
+3	Linie 22 - Umleitung wegen Bauarbeiten in der Jakoberwallstraße vom 03. August bis voraussichtlich 21. August 2026
+3	Universaltoilette fehlt
+3	Niederflur-Bus
+3	Hagen: Aufhebung (H) Stadtmitte / Volme Galerie
+3	Linien 762 und 763: Umleitung wegen Bauarbeiten
+3	Einschränkungen auf der Linie S 7 - Reparatur an mehreren Zügen
+3	Verspätetes Personal aus vorheriger Fahrt
+3	Sanierung und Sperrung B19 Bauphase 6 ab 31. Juli
+3	Einzelne Fahrtausfälle im Spätverkehr am 24.08. zwischen Vaihingen und Herrenberg
+3	Kirchheim (T) - Plochingen: nächtliche Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+3	Esslingen - Bad Cannstatt: nächtliche Haltausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+3	Fahrtausfälle im Spätverkehr zwischen Plochingen und Kirchheim am 3.9.26
+3	Mettingen - Neckarpark: nächtliche Haltausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+3	Zugausfälle im Spätverkehr auf der S1 in der Nacht 8./9. September
+3	Kirchheim (T) - Plochingen: in der Nacht Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+3	Linie RB51: Fahrradmitnahme begrenzt möglich
+3	Linie RB51: Fahrzeuggebundene Einstiegshilfe vorhanden
+3	Linie RB51: rollstuhltaugliches WC
+3	Kalrsruhe/Bietigheim - Stuttgart: Zugausfälle wegen Bauarbeiten
+3	ab 24.08.: Bau Haslacher Straße
+3	Leonberg - Ditzingen: Streckensperrung mit Ersatzverkehr wegen Bauarbeiten
+3	Linie 259: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+3	Einstieg nur mit gültiger Fahrkarte
+3	Weil der Stadt - Zuffenhausen: nächtliche Zugausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+3	Linie 453: Sperrung Kronprinzenstraße wegen Arbeiten an Versorgungsleitungen
+3	Linie 261: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+3	Bad Cannstatt – Untertürkeim: Streckensperrung und Ersatzverkehr wegen Gleisbauarbeiten
+3	Warten auf einen entgegenkommenden Zug
+3	Linie SEV RE42: Ersatzverkehr
+3	Linie SEV RE42: Behindertengerechtes Fahrzeug
+3	Linie 6: Umleitung wegen einer Baustelle
+3	als Linie 6A
+3	Linie 3: Umleitung wegen einer Baustelle
+3	Linie RB26: Fahrradmitnahme begrenzt möglich
+3	Wendlingen - Merklingen: nächtliche Zugausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+3	Linie 253: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+2	Längere Haltezeit am Bahnhof
+2	Linie SB19: weiter als Linie SB 66 nach Wuppertal Hbf
+2	Linie RB31: Fahrradmitnahme begrenzt möglich
+2	Linie RB31: Kein Transport von Sperrgepäck möglich
+2	Linie RB31: Rollstuhlstellplatz
+2	Linie RB31: Rampe im Zug
+2	Ausfälle zwischen Moers und Xanten
+2	Linie 044: Montags bis freitags voraussichtl. keine Niederflurbahn auf dieser Fahrt (nicht in den Schulferien. Angabe ohne Gewähr)
+2	Backnang - Waiblingen: nächtliche Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+2	Backnang - Winnenden: in den Nächten Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+2	Waiblingen - Backnang: nächtliche Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+2	Backnang - Stuttgart: nächtliche Umleitungen mit Haltausfällen wegen Bauarbeiten
+2	Haltestellenausfälle durch Baustelle
+2	Reservierung an DB-Automaten/Reisezentren/vielen DB-Agenturen möglich
+2	RB 6, RE 61, RB 65, RB 66: Vom 17.-24.08.26 Zugausfälle zwischen München Hbf und Pasing
+2	Schorndorf - Fellbach: nächtliche Fahrplanänderungen wegen Instandhaltungsmaßnahmen
+2	Schorndorf - Fellbach: in der Nacht Zug- und Haltausfälle wegen Instandhaltungsmaßnahmen
+2	Schorndorf - Endersbach: nächtliche Fahrplanänderungen wegen Instandhaltungsmaßnahmen
+2	Stufenloses Fahrzeug, Klimaanlage
+2	Rastatt - Karlsruhe: S7/S8 in einzelnen Nächten in den Sommerferien unterbrochen
+2	Remseck Stadtbahn: ab 02.09.26 Linie X43 Umleitung in Richtung Ludwigsburg ZOB.
+2	Hinterer Zugteil
+2	Böblingen - Renningen: nächtliche Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+2	Erste Fahrt der S60 von Zuffenhausen in Richtung Renningen entfällt auf der Teilstrecke bis Korntal
+2	Linie RE14: Fahrradmitnahme begrenzt möglich
+2	Linie RE14: Kein Transport von Sperrgepäck möglich
+2	Linie RE14: Rollstuhlstellplatz
+2	Linie RE14: Rampe im Zug
+2	S7 - Ersatzverkehr zwischen Icking und Wolfratshausen (12. August bis 18. September Durchgehend)
+2	Linie RE44: Fahrradmitnahme begrenzt möglich
+2	Linie RE44: Kein Transport von Sperrgepäck möglich
+2	Linie RE44: Rollstuhlstellplatz
+2	Linie RE44: Rampe im Zug
+2	Rampe im Zug
+2	Kein barrierefreies Fahrzeug
+2	Kurzfristiger Fahrzeugausfall
+2	Linie RB59: Fahrradmitnahme begrenzt möglich
+2	Linie RB59: Fahrzeuggebundene Einstiegshilfe vorhanden
+2	Linie RB59: Behindertengerechte Ausstattung
+2	Linie RB59: Klimaanlage
+2	Linie RB59: Fahrkartenautomat im Zug
+2	Fahrplanänderung wegen Sperrung Gustav-Hirschfeld-Ring ab Montag, 10.08.2026
+2	Linie 302: Umleitung wegen einer Baustelle
+2	Einbahnregelung Kranichstraße in Moers-Hülsdonk
+2	Stufenloses Fahrzeug, WLAN, WC, Klimaanlage
+2	Stadtgebiet Heilbronn: S4 / S41 / S42 entfallen wegen Lidl-Deutschland-Tour
+2	Linie RE3: Fahrradmitnahme begrenzt möglich
+2	Linie RE3: Fahrzeuggebundene Einstiegshilfe vorhanden
+2	Linie RE3: Behindertengerechte Ausstattung
+2	Linie RE3: Laptop-Steckdosen
+2	Linie RE3: Klimaanlage
+2	Linie RB36: Fahrradmitnahme begrenzt möglich
+2	Linie RB36: Kein Transport von Sperrgepäck möglich
+2	Linie RB36: Rollstuhlstellplatz
+2	Linie RB36: Rampe im Zug
+2	Pforzheim - Vaihingen (Enz): nächtliche Zugausfälle mit Ersatzbussen wegen Bauarbeiten
+2	Fahrtausfälle im Spätverkehr am 13.10.
+2	Fahrtausfälle im Spätverkehr am 08.12.
+2	Reparatur an einem Signal
+2	Freiberg (N): Haltestellen Stadtzentrum - Bilfinger Straße verlegt
+2	Verzögerungen im Betriebsablauf
+2	Verfügbarkeit der Gleise derzeit eingeschränkt
+2	Streckensperrung
+2	„Die Linien 700 und 7394 hält NICHT an den Bushaltestellen Meersburg Fähre und Konstanz Staad/Autofähre.“
+2	Bus wartet in Markdorf max. 5 Minuten auf verspätete Anschlusszüge
+2	Das Deutschlandticket und Fahrscheine des bwtarifs gelten auf der Fähre nur, wenn man mit dem Bus auf das Schiff gelangt und es mit dem Bus wieder verlässt. Während der Überfahrt ist ein vorübergehender Ausstieg zulässig.
+2	RB 15: SEV Günzburg <> Lauingen vom 04.09. bis 18.10.2026
+2	verspätete Bereitstellung des Zuges
+2	Ab 10. August: Umleitung und Haltentfall - Linie 7240
+2	Markgröningen: Haltestellen Münchinger Straße - Stuttgarter Weg entfallen
+2	Markgröningen: Haltestellen Pappelweg - Mitte/Helenenstraße entfallen Markgröningen: Haltestellen Pappelweg - Stuttgarter Weg entfallen
+2	Linie SB36: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+2	Linien 20 und 7573.1: Streckensperrung wegen einer Baustelle
+1	Fahrplananpassungen zwischen Gessertshausen und Schwabmünchen
+1	Linie 694: fährt ab Aufderhöhe weiter als Linie 686 zum Graf-Wilhelm-Platz
+1	Linien 10 und 310: Umleitung wegen einer Baustelle
+1	Linie 043: Montags bis freitags voraussichtl. keine Niederflurbahn auf dieser Fahrt (nicht in den Schulferien. Angabe ohne Gewähr)
+1	Bauarbeiten mit Haltestellenausfall auf der Linie 620, 640 und 641
+1	zusätzlicher Zug
+1	Linie 7395: Haltausfall wegen einer Baustelle
+1	Unbefugte Personen auf der Strecke
+1	Linie 258: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+1	Verspätung im Ausland
+1	Stuttgart-West: Umleitung wegen Bauarbeiten
+1	Rosenberg-/Johannesstraße - Berliner Platz (Liederhalle): Umleitung wegen einer Verkehrsbehinderung
+1	Stuttgart-West: Umleitungen wegen Wasserrohrbruch in der Rosenbergstraße
+1	Fahrplanänderung durch Sperrung am Judenberg ab Mittwoch, 22.04.2026, Sperrung am Judenberg ab Mittwoch, 22.04.2026
+1	Vorderer Zugteil
+1	Weil der Stadt - Zuffenhausen: nächtliche Zugausfälle mit Ersatzverkehr wegen Instandhaltungsmaßnahmen
+1	Renningen - Calw: Zugausfälle wegen Stellwerksarbeiten
+1	Linie 189: als 188 von Dorsten ZOB
+1	Neckarsulm - Mosbach/Sinsheim: Stadtbahnen entfallen in den Sommerferien
+1	Linie RE11 (RRX): Fahrradmitnahme begrenzt möglich
+1	Linie RE11 (RRX): Behindertengerechtes Fahrzeug
+1	Linie RE11 (RRX): Rollstuhlstellplatz
+1	Linie RE11 (RRX): rollstuhltaugliches WC
+1	Linie RE11 (RRX): Laptop-Steckdosen
+1	Linie RE11 (RRX): Klimaanlage
+1	Linie RE11 (RRX): WLAN verfügbar
+1	Linien 743, 744 und 943: Umleitung wegen Bauarbeiten
+1	Stuttgart - Lauda: Fahrplanänderungen wegen verschiedener Baumaßnahmen
+1	Bus 361: Umleitung in Holzkirchen bis Jahresende
+1	Entfall Haltestelle Hindenburgstraße für 534 und 535 / Anpassung Abfahrtszeiten
+1	Hemmingen: Haltestelle Bahnhofstraße verlegt
+1	Linie SEV S2: Behindertengerechtes Fahrzeug
+1	Linie SEV S2: Ersatzverkehr
+1	Linie 254: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+1	Bus fährt weiter nach Marktoberdorf (OVG-Linie 51)
+1	DB-Fahrscheine gelten nicht
+1	Deutschland-Ticket nicht gültig
+1	Linie RE6 (RRX): Fahrradmitnahme begrenzt möglich
+1	Linie RE6 (RRX): Behindertengerechtes Fahrzeug
+1	Linie RE6 (RRX): Rollstuhlstellplatz
+1	Linie RE6 (RRX): rollstuhltaugliches WC
+1	Linie RE6 (RRX): Laptop-Steckdosen
+1	Linie RE6 (RRX): Klimaanlage
+1	Linie RE6 (RRX): WLAN verfügbar
+1	Linie RB10: Fahrradmitnahme begrenzt möglich
+1	Linie RB10: Fahrzeuggebundene Einstiegshilfe vorhanden
+1	Linie RB10: Laptop-Steckdosen
+1	Linie RB10: Klimaanlage
+1	Mobiler Bordservice (Snacks und Getränke)
+1	Stuttgart-Bad Cannstatt/Ost: Fahrplanabweichungen wegen Bauarbeiten möglich
+1	Stuttgart-Zuffenhausen: Haltestelle Zuffenhausen Porsche verlegt
+1	Technischer Defekt an einem Bahnübergang
+1	Bedarfsorientierter Fahrzeugeinsatz Nebenverkehrszeit: Bitte melden Sie die Mitnahme von Kinderwägen, Fahrrädern oder Rollatoren spätestens am Vortag unter 09142-96500 an.
+1	Mehrere Wagen fehlen
+1	Haltestellenausfall durch Baumaßnahme
+1	Linie RB66: Fahrradmitnahme begrenzt möglich
+1	Linie RB66: Fahrzeuggebundene Einstiegshilfe vorhanden
+1	Linie RB66: Klimaanlage
+1	Linien 715, 717, 720 und 923: Umleitung wegen Bauarbeiten
+1	Linie RE2: Fahrradmitnahme begrenzt möglich
+1	Linie RE2: Fahrzeuggebundene Einstiegshilfe vorhanden
+1	Linie RE2: rollstuhltaugliches WC
+1	Linie RE2: Toilette an Bord
+1	Keine Verspätungsbegründung
+1	Bus 661: Baumaßnahme zwischen Gründl und Oberappersdorf - Haltestellen entfallen ab sofort bis 11.09.2026
+1	Bus 661 und 683: Straßenschäden in Nandlstadt - Haltestellen entfallen ab 01.08.2026 bis auf Weiteres
+1	Linie RE47: Fahrradmitnahme begrenzt möglich
+1	Kurzfristiger Bahnsteigwechsel in Düsseldorf Hbf
+1	Herrenberg - Tübingen und Tübingen - Metzingen: Fahrplanänderungen wegen Bauarbeiten
+1	Tübingen West - Metzingen: in der Nacht Zugausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+1	Kurzfristiger Personalausfall
+1	Behobener technischer Defekt am Zug
+1	Witterungsbedingte Beeinträchtigungen
+1	Aldingen: Haltestellen Schlosshof - Berliner Straße verlegt
+1	Linie 400: Haltausfall wegen einer Baustelle
+1	zusätzlicher Halt zum Ein- und Ausstieg
+1	Ulm - Wendlingen: nächtliche Zugausfälle wegen Instandhaltungsmaßnahmen
+1	Wendlingen - Ulm: nächtliche Zugausfälle mit Ersatzbussen wegen Instandhaltungsmaßnahmen
+1	Linie SB19: Fällt Heiligabend u. Silvester auf einen Werktag gilt der Samstagsfahrplan *
+1	Im Zeitraum 26.08.-30.10.2026 keine Bedienung der Haltestellen Balingen Schmiden, Hochhaus und Liegnitzerstraße.
+1	Im Zeitraum 26.08.-30.10.2026 verkehren alle Fahrten an der Haltestelle Balingen Schmiden, Altenheim in Richtung Balingen 3 min. früher.
+1	Backnang: Haltestelle Rossbergstaffel verlegt
+1	Linie X42: Anschlussgarantie gilt auf allen Linien der Vestischen mo-so/feiertags zwischen 20.00 Uhr und Betriebsende. Infos unter www.vestische.de/anschlussgarantie.
+1	Linie 188: als Linie 189 von Essen, Boyer Straße
+1	Bereitstellung weiterer Wagen
+1	Bau Kappler Straße
+1	Linie SB66: weiter als Linie SB 19 nach Essen Hbf
+1	Reservierungspflicht
+1	Nähere Informationen in Kürze
+1	Hohes Fahrgastaufkommen verlängert Ein- und Ausstieg
+1	Rufbus, Anmeldung bis 60 Min. vor Fahrt, Online oder Tel. 08282828700
+1	Haltestellen zwischen Unterreichau, Pumpstation und Pleß, Unterdorf/Riedweg werden aktuell nicht angefahren.
+1	Philippsburg/Östringen/Kraichtal: Einschränkungen durch Veranstaltung
+1	Heute ohne fahrzeuggebundene Einstiegshilfe

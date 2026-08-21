@@ -1,0 +1,18 @@
+{
+ "source": "realtime.gtfs.de/realtime-free.pb",
+ "fetched_utc": "2026-08-21T10:48:39+00:00",
+ "entities": 160,
+ "trip_updates": 100,
+ "alerts": 60,
+ "tu_with_route_id": 0,
+ "alerts_amenity": 0,
+ "alerts_attribution": 56,
+ "dedup_samples": [
+  {
+   "header": "Kirchheim (T) - Plochingen: in der Nacht Zugausfälle mit Ersatzbussen wegen Bauarbeiten",
+   "desc": "Wegen Bauarbeiten kommt es in der Nacht 26./27. November 2026 von ca. 22:00 bis 05:00 Uhr zu folgenden Fahrplanänderungen:\n \nS1: Ausfall zwischen Kirc",
+   "key": "387921881771f10f3b938a4baedd21730bf3ae2149c94b2ad0090043fb187549"
+  }
+ ],
+ "kirmes_key": "019932980d52230801f49c3544a95c0bda5700f0a2b92e12d5bf8c357ea61c1b"
+}

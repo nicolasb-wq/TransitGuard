@@ -1,0 +1,13 @@
+# Nur für lokale Entwicklung (Deploy läuft ohne Container — ADR-0012)
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_DB: transitguard
+      POSTGRES_USER: tg_admin
+      POSTGRES_PASSWORD: dev-only
+    ports: ["5432:5432"]
+    volumes: ["tg_pgdata:/var/lib/postgresql/data"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U tg_admin -d transitguard"], interval: 5s, retries: 10 }
+volumes:
+  tg_pgdata:

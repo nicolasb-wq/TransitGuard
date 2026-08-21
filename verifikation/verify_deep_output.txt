@@ -1,0 +1,48 @@
+gtfs.de HTTP 200 | 39,824,822 B | 2026-08-21T09:39:38+00:00
+TUs mit vehicle-Feld: id=0, label=0, position=0
+vehicle-Stichproben:
+  id='' label=''
+  id='' label=''
+  id='' label=''
+  id='' label=''
+  id='' label=''
+trip_id-Stichproben:
+  110895
+  1264697
+  1628000
+  1757213
+  963224
+Departure-Delays (n=200,000): median 0s | mean 63s | p10 0s | p90 186s | min -30384s max 7148s
+Distinct Header-Texte gesamt: 427
+Alerts je Regionsschluessel (Header+Desc, Mehrfachtreffer moeglich):
+   bremen: 12,899
+   sachsen: 12,898
+   niedersachsen: 12,898
+   rhein: 7,548
+   ruhr: 1,525
+   baden: 1,195
+   nvbw: 1,195
+   nürnberg: 594
+   stuttgart: 275
+   bayern: 145
+   münchen: 37
+   berlin: 29
+   augsburg: 20
+   hannover: 1
+Top-15 Header nach Haeufigkeit:
+   92,460x  
+      377x  Fahrradmitnahme begrenzt möglich
+      200x  Fahrzeuggebundene Einstiegshilfe vorhanden
+      160x  Komfort Check-in verfügbar - wenn möglich bitte einchecken
+      150x  Bordrestaurant
+      139x  WLAN verfügbar
+      129x  Fahrradmitnahme reservierungspflichtig
+       78x  Klimaanlage
+       70x  Umleitungen durch Baumaßnahme
+       60x  nur 2. Kl.
+       58x  Behindertengerecht
+       49x  Zuffenhausen Kelterplatz - Pragsattel: Streckensperrung und Ersatzverkehr wegen Weichen-Er
+       44x  Stuttgart-Süd: Gesperrte Zugänge wegen weiterer Bauarbeiten
+       44x  Behindertengerechtes Fahrzeug
+       41x  U-Bahnen halten bis auf Weiteres nicht am U-Bahnhof "Nordstraße"
+Alle 411 nicht sinnvoll druckbar -> speichere Vollliste
