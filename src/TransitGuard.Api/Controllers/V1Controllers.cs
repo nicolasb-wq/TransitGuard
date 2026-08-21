@@ -1,3 +1,4 @@
+using TransitGuard.Core.Journeys;
 using Microsoft.AspNetCore.Mvc;
 using TransitGuard.Api.Contracts;
 using TransitGuard.Api.Services;
@@ -69,7 +70,7 @@ public sealed class ReportsController(
     IReportRepository reports, IReportEventLog events, IRealtimeDispatcher dispatcher,
     IFeatureFlagService flags, ITrustStore trust, TicketGate gate, IClock clock,
     RateLimiter limiter, InMemoryIdempotencyStore idempotency, InMemoryTripWhitelistProvider whitelist,
-    EntitlementContext tiers, AccessGate access, TtlEngine ttlEngine) : ControllerBase
+    EntitlementContext tiers, AccessGate access, TtlEngine ttlEngine, IStopStore stops) : ControllerBase
 {
     [HttpPost("/v1/reports")]
     public IActionResult Create([FromBody] ReportCreateRequest req, [FromHeader(Name = "Idempotency-Key")] string? idemKey,
@@ -140,7 +141,10 @@ public sealed class ReportsController(
         var report = new Report
         {
             CreatedAt = now, CityId = city.CityId, AnchorType = anchor.Value,
-            StationId = req.Station.StopId, StationName = req.Station.StopId,
+            StationId = req.Station.StopId,
+            // Anzeigename statt technischer ID (T-STOP): stand hier vorher als
+            // StopId und erschien so wortwoertlich in der Meldeliste der App.
+            StationName = StopLookup.DisplayName(stops.Stops(city.CityId), req.Station.StopId),
             TripId = req.Trip?.TripId, TripStartDate = req.Trip?.StartDate, RouteId = req.Trip?.RouteId,
             DirectionId = req.Trip?.DirectionId, Headsign = req.Trip?.Headsign,
             Kind = kind.Value, VehicleKind = vKind, InspectorCount = req.InspectorCount,

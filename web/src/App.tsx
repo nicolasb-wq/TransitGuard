@@ -1,238 +1,217 @@
-import { useEffect, useRef, useState } from 'react';
+// ---------------------------------------------------------------------------
+// App-Hülle: Kopfzeile, drei Tabs, Ticket-Gate, SignalR-Livefeed.
+//
+// Hierarchie (UX-Auftrag): Fahren > Warnen > Mehr. Genau drei Ziele, immer am
+// unteren Rand, damit die App einhändig bedienbar bleibt.
+//
+// Das Ticket-First-Gate (docs/18 H1) sitzt bewusst HIER und nicht in den
+// Screens: es gibt genau eine Stelle, die entscheidet, und keinen Weg daran
+// vorbei. „Später"/„Überspringen" existiert nicht — der Fahrplan-Teil bleibt
+// ohne Bestätigung nutzbar, der Kontroll-Teil nicht.
+// ---------------------------------------------------------------------------
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as signalR from '@microsoft/signalr';
-import { api, ensureDevice, fmtDelay, fmtTime, type JourneyResult, type Me, type Stop } from './api';
+import {
+  api, ApiError, confirmTicket, ensureDevice, reportAtStation, reportOnTrip,
+  setOn402, ticketConfirmed, type Departure, type Me, type Stop
+} from './api';
+import { Sheet, ToastHost, useToast } from './ui';
+import Fahren from './screens/Fahren';
+import Warnen from './screens/Warnen';
+import Mehr from './screens/Mehr';
 
-// ---------- Ticket-First-Gate (docs/18 H1): 24 h gemerkte Bestätigung ----------
-function useTicketGate() {
-  const [ask, setAsk] = useState(false);
-  const KEY = 'tg_ticket_confirmed';
-  const TS = 'tg_ticket_confirmed_at';
-  useEffect(() => {
-    const ok = localStorage.getItem(KEY) === '1';
-    const fresh = Date.now() - Number(localStorage.getItem(TS) ?? 0) < 24 * 3600e3;
-    if (!ok || !fresh) setAsk(true);
-  }, []);
-  const confirm = () => { localStorage.setItem(KEY, '1'); localStorage.setItem(TS, String(Date.now())); setAsk(false); };
-  return { ask, confirm, buy: () => { location.hash = '#ticket'; } };
-}
+type Tab = 'fahren' | 'warnen' | 'mehr';
 
-function TicketGateDialog({ onConfirm, onBuy }: { onConfirm: () => void; onBuy: () => void }) {
-  return (
-    <div className="overlay">
-      <div className="card gate">
-        <h2>Bist du gerade mit gültigem Ticket unterwegs?</h2>
-        <p className="muted">Deutschlandticket, hvv-Ticket, Jobticket oder Einzelticket. Kontrollhinweise sind für Fahrgäste mit gültigem Fahrschein gedacht — danke fürs Fairplay.</p>
-        <button className="primary" onClick={onConfirm}>✓ Ja, ich habe ein gültiges Ticket</button>
-        <button className="ghost" onClick={onBuy}>Ticket kaufen →</button>
-        <p className="tiny">Der Fahrplan-Companion (Abfahrten, Störungen, Barrierefreiheit) bleibt ohne Bestätigung nutzbar.</p>
-      </div>
-    </div>
-  );
-}
+const TABS: { id: Tab; glyph: string; label: string }[] = [
+  { id: 'fahren', glyph: '🚇', label: 'Fahren' },
+  { id: 'warnen', glyph: '⚠️', label: 'Warnen' },
+  { id: 'mehr', glyph: '⋯', label: 'Mehr' },
+];
 
-// ---------- Haupt-App ----------
 export default function App() {
-  const gate = useTicketGate();
+  return <ToastHost><Inner /></ToastHost>;
+}
+
+function Inner() {
+  const toast = useToast();
+  const [tab, setTab] = useState<Tab>('fahren');
   const [me, setMe] = useState<Me | null>(null);
-  const [nearby, setNearby] = useState<Stop[]>([]);
-  const [dest, setDest] = useState('');
-  const [destResults, setDestResults] = useState<Stop[]>([]);
-  const [result, setResult] = useState<JourneyResult | null>(null);
-  const [live, setLive] = useState<string[]>([]);
-  const hubRef = useRef<signalR.HubConnection | null>(null);
-  const [fromLabel, setFromLabel] = useState('—');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
+  const [gateOpen, setGateOpen] = useState(false);
+  const [liveCount, setLiveCount] = useState(0);
+  const [unseen, setUnseen] = useState(0);
+  const [nearestStop, setNearestStop] = useState<Stop | null>(null);
+  /** Spiegelt die Ticket-Bestätigung als State — sonst merkt der Live-Feed
+   *  eine spätere Bestätigung nie (Bug des Altstands: leere Abhängigkeitsliste). */
+  const [ticketOk, setTicketOk] = useState(ticketConfirmed);
+  const [locating, setLocating] = useState(false);
 
-  useEffect(() => { api.me().then(setMe).catch(() => {}); }, []);
-  useEffect(() => { ensureDevice().catch(() => {}); }, []);
+  /** Nach dem Gate auszuführende Aktion — so kostet „erst bestätigen" keinen Tap extra. */
+  const pending = useRef<null | (() => void)>(null);
 
-  // SignalR-Live-Feed: neue Kontrollhinweise der Stadt (Ticket-Gate-Claim mitgesendet, docs/06)
+  const refreshMe = useCallback(() => { api.me().then(setMe).catch(() => {}); }, []);
+
+  useEffect(() => { ensureDevice().then(refreshMe).catch(() => {}); }, [refreshMe]);
+
+  // 402 aus dem API-Kern führt zum Zugangs-Tab statt zu einem stummen Fehlschlag.
+  useEffect(() => setOn402(() => { setTab('mehr'); refreshMe(); }), [refreshMe]);
+
+  // --- SignalR: Live-Kontrollhinweise der Stadt ----------------------------
   useEffect(() => {
-    if (localStorage.getItem('tg_ticket_confirmed') !== '1') return;
+    if (!ticketOk) return;
     const hub = new signalR.HubConnectionBuilder()
-      .withUrl(`${import.meta.env.VITE_API_URL ?? ''}/hubs/v1/realtime`, { accessTokenFactory: () => localStorage.getItem('tg_device_token') ?? '' })
+      .withUrl(`${import.meta.env.VITE_API_URL ?? ''}/hubs/v1/realtime`, {
+        accessTokenFactory: () => localStorage.getItem('tg_device_token') ?? ''
+      })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .build();
-    hub.on('report.created', () =>
-      setLive(l => [`Neuer Kontrollhinweis (${new Date().toLocaleTimeString('de-DE')})`, ...l].slice(0, 5)));
-    hub.on('control.ticket_gate', () => setLive(l => ['Ticket-Bestätigung erforderlich', ...l].slice(0, 5)));
-    hubRef.current = hub;
-    hub.start().then(() => hub.invoke('join', 'city.hamburg.reports.free', true, null).catch(() => {})).catch(() => {});
+
+    hub.on('report.created', () => {
+      setLiveCount(c => c + 1);
+      setUnseen(u => u + 1);
+    });
+    hub.on('control.ticket_gate', () => setGateOpen(true));
+
+    hub.start()
+      .then(() => hub.invoke('join', 'city.hamburg.reports.free', true, null).catch(() => {}))
+      .catch(() => {});
     return () => { hub.stop().catch(() => {}); };
+  }, [ticketOk]);
+
+  useEffect(() => { if (tab === 'warnen') setUnseen(0); }, [tab, liveCount]);
+
+  // --- Ticket-Gate ---------------------------------------------------------
+  const requireTicket = useCallback((then?: () => void) => {
+    if (ticketConfirmed()) { setTicketOk(true); then?.(); return; }
+    setTicketOk(false);
+    pending.current = then ?? null;
+    setGateOpen(true);
   }, []);
 
-  const useLocation = () => {
-    if (!navigator.geolocation) { setErr('Standort nicht verfügbar'); return; }
-    setBusy(true);
+  const onGateConfirm = useCallback(() => {
+    confirmTicket();
+    setTicketOk(true);
+    setGateOpen(false);
+    const next = pending.current; pending.current = null;
+    next?.();
+  }, []);
+
+  // --- Standort (von zwei Tabs gebraucht) ----------------------------------
+  const locate = useCallback(() => {
+    if (!navigator.geolocation) { toast('Dein Gerät gibt den Standort nicht frei.', 'err'); return; }
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       async p => {
-        const stops = await api.nearby(p.coords.latitude, p.coords.longitude);
-        setNearby(stops); setFromLabel(stops[0] ? `${stops[0].stop_name} (${stops[0].distance_km} km)` : '—');
-        setBusy(false);
+        try { setNearestStop((await api.nearby(p.coords.latitude, p.coords.longitude, 1))[0] ?? null); }
+        catch { toast('Haltestellen konnten nicht geladen werden.', 'err'); }
+        finally { setLocating(false); }
       },
-      () => { setErr('Standort-Zugriff verweigert'); setBusy(false); },
-      { enableHighAccuracy: true, timeout: 8000 }
+      () => { setLocating(false); toast('Standort nicht freigegeben.', 'err'); },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
     );
-  };
+  }, [toast]);
 
-  const searchDest = async () => {
-    if (dest.trim().length < 2) return;
-    setDestResults(await api.searchStops(dest.trim()).catch(() => []));
-  };
+  // --- Melden --------------------------------------------------------------
+  const meldeFehler = useCallback((e: unknown) => {
+    const code = e instanceof ApiError ? e.code : 'network';
+    toast(code === 'rate_limited'
+      ? 'Kurz durchatmen — das war zu schnell hintereinander.'
+      : code === 'ticket_confirmation_required'
+        ? 'Dafür fehlt noch die Ticket-Bestätigung.'
+        : 'Der Hinweis kam nicht durch. Bitte noch einmal versuchen.', 'err');
+  }, [toast]);
 
-  const findLine = async (fromStopId: string) => {
-    const target = destResults[0]?.stop_id ?? destResults.find(s => s.stop_id)?.stop_id;
-    if (!target) { setErr('Bitte Ziel auswählen'); return; }
-    setBusy(true); setErr('');
-    try {
-      const r = await api.journey(fromStopId, null, null, target);
-      setResult(r);
-    } catch (e) { setErr((e as Error).message); }
-    setBusy(false);
-  };
+  const meldeAnFahrt = useCallback(
+    (d: Departure, boardStopId: string, routeId?: string, headsign?: string | null) => {
+      requireTicket(() => {
+        reportOnTrip(d, boardStopId, routeId, headsign)
+          .then(() => toast('Danke! Dein Hinweis wandert jetzt mit der Fahrt mit.', 'ok'))
+          .catch(meldeFehler);
+      });
+    }, [requireTicket, toast, meldeFehler]);
+
+  const meldeAnHaltestelle = useCallback((stop: Stop) => {
+    requireTicket(() => {
+      reportAtStation(stop.stop_id)
+        .then(() => { toast(`Danke! Hinweis für ${stop.stop_name} ist aktiv.`, 'ok'); setLiveCount(c => c + 1); })
+        .catch(meldeFehler);
+    });
+  }, [requireTicket, toast, meldeFehler]);
 
   return (
-    <div className="app">
-      {gate.ask && <TicketGateDialog onConfirm={gate.confirm} onBuy={gate.buy} />}
-      <header>
-        <h1>TransitGuard <span className="city">Hamburg & Umland</span></h1>
-        {me && me.access === 'trial' && <div className="trial">Testphase: {me.trial_days_remaining} Tage · danach {me.subscription_price_eur.toFixed(2)} €/Monat <a href="#abo">Abo</a></div>}
-        {me && me.access === 'locked' && <div className="trial locked">Testphase abgelaufen — <a href="#abo">jetzt abonnieren</a></div>}
+    <div className="shell">
+      <header className="topbar">
+        <div>
+          <div className="brand">TransitGuard</div>
+          <span className="where">Hamburg &amp; Umland</span>
+        </div>
+        <span className="spacer" />
+        {me?.access === 'trial' && (
+          <span className="pill live">Test · {me.trial_days_remaining} T.</span>
+        )}
+        {me?.access === 'subscriber' && <span className="pill live">Abo</span>}
       </header>
 
-      <section className="panel">
-        <h2>Deine Fahrt</h2>
-        <div className="row">
-          <button className="ghost" onClick={useLocation}>📍 Standort</button>
-          <span className="muted">Start: {fromLabel}</span>
-        </div>
-        <div className="nearby">
-          {nearby.map(s => (
-            <button key={s.stop_id} className="chip" onClick={() => findLine(s.stop_id)}>{s.stop_name}</button>
-          ))}
-        </div>
-        <div className="row">
-          <input placeholder="Ziel: Haltestelle suchen…" value={dest} onChange={e => setDest(e.target.value)} />
-          <button className="primary" onClick={searchDest}>Suchen</button>
-        </div>
-        <div className="nearby">
-          {destResults.map(s => (
-            <button key={s.stop_id} className={`chip ${destResults[0]?.stop_id === s.stop_id ? 'sel' : ''}`}
-              onClick={() => setDestResults([s, ...destResults.filter(x => x.stop_id !== s.stop_id)])}>{s.stop_name}</button>
-          ))}
-        </div>
-        {busy && <p className="muted">Suche…</p>}
-        {err && <p className="err">{err}</p>}
-      </section>
+      <main>
+        {me?.access === 'locked' && (
+          <div className="banner locked">
+            <span aria-hidden="true">🔒</span>
+            <span className="grow">Testphase abgelaufen.</span>
+            <button className="chip" onClick={() => setTab('mehr')}>Weiter</button>
+          </div>
+        )}
 
-      {result !== null && (
-        <section className="panel">
-          <h2>Linien & nächste Abfahrten</h2>
-          {result.direct_connections.length === 0 && result.transfer_connections.length === 0 && <p className="muted">Keine Verbindung gefunden.</p>}
-          {result.transfer_connections.length > 0 && (
-            <div className="connection">
-              <div className="line">🔁 Mit 1 Umstieg</div>
-              {result.transfer_connections.map((tr, i) => (
-                <div key={i} className="dep">
-                  <b>{tr.leg_a.RouteId}</b> → {fmtTime(tr.leg_a.alight_at)} umsteigen <b>{tr.leg_b.RouteId}</b> → Ankunft {fmtTime(tr.leg_b.alight_at)}
-                  <span className="muted">({Math.round(tr.total_seconds / 60)} min, Wartezeit {Math.round(tr.wait_seconds / 60)} min)</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {result.direct_connections.map((c, i) => (
-            <div key={i} className="connection">
-              <div className="line"><b>{c.route_id}</b> → {c.headsign} <span className="muted">({c.stops_count} Halte)</span></div>
-              {c.next_departures.length === 0 && <p className="muted">Heute keine weitere Fahrt.</p>}
-              {c.next_departures.map((d, j) => (
-                <div key={j} className="dep">
-                  <span className={d.realtime ? 'rt' : ''}>{fmtTime(d.estimated_time ?? d.scheduled_time)}</span>
-                  {d.delay_s ? <span className="delay">{fmtDelay(d.delay_s)}</span> : null}
-                  {!d.realtime && <span className="muted">Fahrplan</span>}
-                  <button className="chip" onClick={() => reportOnTrip(d)}>⚠ Kontrolle melden</button>
-                  {(d.warnings ?? []).map((w, k) => (
-                    <div key={k} className="warning">🚨 {w.message} — Halt {w.affected_stop_id}{w.user_eta_seconds != null ? ` (in ~${Math.round(w.user_eta_seconds / 60)} min)` : ''}</div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          ))}
-        </section>
-      )}
+        {tab === 'fahren' && <Fahren onReport={meldeAnFahrt} />}
+        {tab === 'warnen' && (
+          <Warnen
+            liveCount={liveCount}
+            onNeedTicket={() => requireTicket()}
+            onReportStation={meldeAnHaltestelle}
+            nearestStop={nearestStop}
+            onLocate={locate}
+            locating={locating}
+          />
+        )}
+        {tab === 'mehr' && <Mehr me={me} onNeedTicket={() => requireTicket()} />}
 
-      {live.length > 0 && (
-        <section className="panel">
-          <h2>Live-Kontrollhinweise</h2>
-          {live.map((l, i) => <div key={i} className="warning">🚨 {l}</div>)}
-        </section>
-      )}
+        <footer>
+          <p className="legal">
+            Fahrplan- &amp; Echtzeitdaten: gtfs.de / DELFI e.V. / beteiligte Verbünde
+            (CC BY-SA 4.0 / CC BY 4.0). Community-Hinweise sind unverifizierte Angaben von Fahrgästen.
+          </p>
+        </footer>
+      </main>
 
-      {live.length > 0 && (
-        <section className="panel">
-          <h2>Live-Kontrollhinweise</h2>
-          {live.map((l, i) => <div key={i} className="warning">🚨 {l}</div>)}
-        </section>
-      )}
+      <nav className="tabbar" aria-label="Hauptbereiche">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            aria-current={tab === t.id ? 'page' : undefined}
+          >
+            <span className="glyph" aria-hidden="true">{t.glyph}</span>
+            {t.id === 'warnen' && unseen > 0 && (
+              <span className="badge" aria-label={`${unseen} neue Hinweise`}>{unseen > 9 ? '9+' : unseen}</span>
+            )}
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
-      <AboScreen me={me} />
-      <TicketScreen />
-      <footer>
-        <p className="tiny">Fahrplan- & Echtzeitdaten: gtfs.de / DELFI e.V. / beteiligte Verbünde (CC BY-SA 4.0 / CC BY 4.0) · Nutzungsbedingungen & Impressum: siehe Betreiberseite · Kontrollhinweise sind unverifizierte Community-Angaben.</p>
-      </footer>
-    </div>
-  );
-}
-
-async function reportOnTrip(d: import('./api').Departure) {
-  if (localStorage.getItem('tg_ticket_confirmed') !== '1') { location.hash = '#ticket'; return; }
-  await api.report({
-    city_slug: 'hamburg', anchor_type: 'trip', report_type: 'in_vehicle', vehicle_kind: 'rail',
-    station: { stop_id: d.trip_ref.trip_id },   // Station wird clientseitig aus Kontext gefüllt (v1: Trip-Anker)
-    trip: { trip_id: d.trip_ref.trip_id, start_date: d.trip_ref.start_date, route_id: d.route_id, headsign: d.headsign },
-    inspector_count: 1,
-    client: { ticket_confirmed: true, platform: 'web' }
-  }, crypto.randomUUID()).catch(e => alert(`Meldung fehlgeschlagen: ${(e as Error).message}`));
-  alert('Danke! Meldung ist aktiv und wandert mit der Fahrt mit.');
-}
-
-function AboScreen({ me }: { me: Me | null }) {
-  const [receipt, setReceipt] = useState('');
-  const [msg, setMsg] = useState('');
-  if (location.hash !== '#abo') return null;
-  const price = (me?.subscription_price_eur ?? 2.99).toFixed(2);
-  return (
-    <div className="overlay" onClick={() => location.hash = ''}>
-      <div className="card" onClick={e => e.stopPropagation()}>
-        <h2>TransitGuard Abo — {price} €/Monat</h2>
-        <p className="muted">14 Tage kostenlose Testphase ab erster Nutzung. Monatlich kündbar über den Store. dein Entitlement-Token bleibt anonym (Besitz-Modell).</p>
-        <div className="row">
-          <input placeholder="Store-Receipt (Sandbox)…" value={receipt} onChange={e => setReceipt(e.target.value)} />
-          <button className="primary" onClick={async () => {
-            try {
-              const r = await api.activate('web' as never, receipt.trim());
-              localStorage.setItem('tg_access_token', r.access_token);
-              localStorage.setItem('tg_restore_code', r.restore_code);
-              setMsg(`Aktiviert! Restore-Code notieren: ${r.restore_code}`);
-            } catch (e) { setMsg((e as Error).message); }
-          }}>Aktivieren</button>
-        </div>
-        {msg && <p className="muted">{msg}</p>}
-      </div>
-    </div>
-  );
-}
-
-function TicketScreen() {
-  if (location.hash !== '#ticket') return null;
-  return (
-    <div className="overlay" onClick={() => location.hash = ''}>
-      <div className="card" onClick={e => e.stopPropagation()}>
-        <h2>Ticket kaufen</h2>
-        <p className="muted">hvv switch App (Deutschlandticket 63 €/Monat, monatlich kündbar) oder hvv Onlineshop:</p>
-        <a className="primary btn-link" href="https://www.hvv.de/deutschlandticket" target="_blank" rel="noreferrer">hvv Deutschlandticket öffnen →</a>
-        <p className="tiny">Preisstand hvv.de, ohne Gewähr. Kauf und Gültigkeit beim Verbund.</p>
-      </div>
+      <Sheet open={gateOpen} onClose={() => setGateOpen(false)} title="Fährst du gerade mit gültigem Ticket?">
+        <p>
+          Deutschlandticket, hvv-Ticket, Jobticket oder Einzelfahrschein — alles zählt.
+          Community-Hinweise sind für Fahrgäste mit gültigem Fahrschein gedacht.
+        </p>
+        <button className="btn primary block" onClick={onGateConfirm}>
+          Ja, ich habe ein gültiges Ticket
+        </button>
+        <a className="btn ghost block" href="https://www.hvv.de/deutschlandticket"
+          target="_blank" rel="noreferrer">Ticket kaufen</a>
+        <p className="sub" style={{ margin: '14px 0 0' }}>
+          Fahrplan, Abfahrten und Störungen kannst du auch ohne Bestätigung nutzen.
+          Die Bestätigung gilt 24 Stunden und bleibt auf deinem Gerät.
+        </p>
+      </Sheet>
     </div>
   );
 }

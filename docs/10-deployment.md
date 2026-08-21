@@ -80,9 +80,41 @@ api.example.de {
     # SignalR-WebSockets: Caddy handled Upgrade automatisch
 }
 app.example.de {
-    root * /srv/pwa
-    try_files {path} /index.html
-    file_server
+    # ------------------------------------------------------------------
+    # API unter DEMSELBEN Origin wie die PWA (Fund 21.08.2026).
+    # Ohne diese drei Zeilen ist die PWA in Produktion funktionslos:
+    # `npm run build` setzt ohne VITE_API_URL relative Pfade, und
+    # `try_files ... /index.html` haette jeden /v1/-Aufruf mit der
+    # HTML-Seite beantwortet (JSON-Parse-Fehler in jedem Request).
+    # Same-Origin statt CORS ist hier auch die schnellere Wahl: die App
+    # schickt drei eigene Header (X-Device-Token, X-Ticket-Confirmed,
+    # Idempotency-Key) — cross-origin kostete das je Aufruf einen
+    # zusaetzlichen OPTIONS-Preflight, im Mobilfunknetz spuerbar.
+    # ------------------------------------------------------------------
+    # `handle`-Bloecke, NICHT Matcher + reverse_proxy: Caddy ordnet Direktiven
+    # nach einer festen Reihenfolge, in der `try_files` (ein Rewrite) VOR
+    # `reverse_proxy` laeuft. Ein blosser @api-Matcher kaeme zu spaet — der
+    # Rewrite haette /v1/... da schon auf /index.html gezogen. Am 21.08.2026
+    # gemessen und deshalb hier festgehalten.
+    @api path /v1/* /health/* /hubs/*
+    handle @api {
+        header Cache-Control "no-store"   # Kill-Switch: nie aus dem Client-Cache
+        reverse_proxy 127.0.0.1:5080 {
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle {
+        root * /srv/pwa
+        try_files {path} /index.html
+        file_server
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+    }
     # Service-Worker-Build ohne Meldungsdaten (B8): API-Calls immer live
 }
 ```

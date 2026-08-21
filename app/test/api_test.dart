@@ -42,10 +42,47 @@ void main() {
       expect(w.message, contains('halte deine Fahrkarte bereit'));
     });
 
+    // T-DTO-4: Vertrags-Asymmetrie, gemessen am 21.08.2026 gegen eine laufende
+    // API. POST /v1/journeys/search liefert route_id/headsign NICHT auf der
+    // Abfahrt (dort stehen sie auf der Verbindung) — GET /v1/stops/{id}/departures
+    // dagegen schon. Vorher war routeId nicht-nullable: jede Fahrtensuche warf
+    // einen TypeError, den _findLine nicht faengt (nur ApiException).
+    test('Departure.fromJson ohne route_id/headsign (Antwort der Fahrtensuche)', () {
+      final d = Departure.fromJson({
+        'trip_ref': {'trip_id': 'T_HH_3', 'start_date': '20260821'},
+        'scheduled_time': '2026-08-21T20:50:00Z',
+        'realtime': false,
+        'warnings': const [],
+      });
+      expect(d.tripId, 'T_HH_3');
+      expect(d.routeId, isNull);
+      expect(d.headsign, isNull);
+      expect(d.delayS, isNull);
+      expect(d.estimated, isNull);
+      expect(d.realtime, isFalse);
+    });
+
     test('Me.fromJson: Trial-Stand', () {
       final m = Me.fromJson({'access': 'trial', 'trial_days_remaining': 14});
       expect(m.access, 'trial');
       expect(m.trialDaysRemaining, 14);
+    });
+  });
+
+  group('Idempotency-Key (docs/04 §4 — Server antwortet ohne ihn 422)', () {
+    test('hat UUID-v4-Form', () {
+      final k = newIdempotencyKey();
+      expect(
+        RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
+            .hasMatch(k),
+        isTrue,
+        reason: 'unerwartete Form: $k',
+      );
+    });
+
+    test('ist je Aufruf verschieden', () {
+      final keys = {for (var i = 0; i < 500; i++) newIdempotencyKey()};
+      expect(keys.length, 500);
     });
   });
 

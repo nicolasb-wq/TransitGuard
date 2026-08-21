@@ -2,9 +2,20 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
-    <title>TransitGuard — ÖPNV-Companion</title>
+    <!-- viewport-fit=cover: die Tab-Leiste sitzt sonst unter der iOS-Home-Indicator-Linie -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Fahrplan, Live-Abfahrten und Störungen für Hamburg & Umland — Companion für Fahrgäste mit gültigem Ticket." />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f7fb" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a1017" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TransitGuard" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <title>TransitGuard — ÖPNV-Companion Hamburg</title>
   </head>
   <body>
     <div id="root"></div>

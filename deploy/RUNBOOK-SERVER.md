@@ -77,6 +77,10 @@ FROM ingest_metrics ORDER BY id DESC LIMIT 5;
 ## Phase 6 — Abnahme & Live-Gang
 - [ ] Akzeptanz-API (Skript `scripts/acceptance.sh <basis-url>`): health/device/gate/trial/report/warnung — alles grün.
 - [ ] PWA deployen (`npm --prefix web ci && npm --prefix web run build` → rsync `web/dist/ → /srv/pwa/`).
+      **Ohne `VITE_API_URL` bauen** — die PWA spricht dann relative Pfade an und Caddy
+      reicht `/v1/*`, `/health/*`, `/hubs/*` an die API weiter (Same-Origin, kein CORS).
+      Gegenprobe nach dem Deploy: `curl -s https://app.example.de/v1/cities | head -c 40`
+      muss JSON liefern, **nicht** `<!doctype html>` — sonst fehlt der `@api`-Block im Caddyfile.
 - [ ] Rechtliche Gates T7.4 (AGB/Impressum/Charta live, Anwalt F-1) **vor** Play-Store-Einreichung (Flutter-Kanal separat).
 - [ ] Rollback-Generalprobe: `ln -sfn …releases/<vorher> current && systemctl restart transitguard` < 30 s — einmal live üben.
 
