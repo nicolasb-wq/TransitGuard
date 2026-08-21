@@ -53,6 +53,10 @@ builder.Services.AddSingleton<TtlEngine>(sp =>
 builder.Services.AddSingleton<TransitGuard.Core.Journeys.TransferRouter>(sp => new(sp.GetRequiredService<ITripScheduleStore>()));
 builder.Services.AddSingleton<AppDbContextProxy>();
 builder.Services.AddSingleton<IngestJobs.IAlarmSink, IngestJobs.LoggingAlarmSink>();
+// Metrik-Senke des Ingests: im Memory-Modus ins Log, im Prod-Modus nach
+// ingest_metrics (siehe Postgres-Zweig unten). Ohne diese Registrierung ist
+// PollRealtimeJob nicht auflösbar und die API startet mit Ingest gar nicht (T-DI).
+builder.Services.AddSingleton<IIngestMetricsSink, TransitGuard.Api.Services.LoggingIngestMetricsSink>();
 builder.Services.AddSingleton<IngestJobs.IStaticBuildStore, IngestJobs.InMemoryStaticBuildStore>();
 builder.Services.AddScoped<IngestJobs.StaticSyncJob>();
 builder.Services.AddScoped<TtlSweepService>();   // Auflösung je Job-Ausführung (Hangfire-Scope)
@@ -72,6 +76,10 @@ if (provider == "postgres")
         ?? throw new InvalidOperationException("DATABASE:BILLING fehlt (Env DATABASE__BILLING)");
     TransitGuard.Data.EfServiceCollectionExtensions.AddTransitGuardEfStores(builder.Services, appCs, billCs);
     builder.Services.AddScoped<TransitGuard.Api.Services.ITrustStore, TransitGuard.Api.Services.EfTrustStoreAdapter>();
+    // Prod-Metriken landen in der Tabelle, nicht nur im Log.
+    builder.Services.AddSingleton<IIngestMetricsSink>(sp =>
+        new TransitGuard.Api.Services.PostgresIngestMetricsSink(
+            appCs, sp.GetRequiredService<ILogger<TransitGuard.Api.Services.PostgresIngestMetricsSink>>()));
     builder.Logging.AddConsole();
 }
 // EF überschreibt Scoped-Registrierungen nicht: In-Memory-Stores NUR im Memory-Modus registrieren
@@ -109,7 +117,12 @@ app.Use(async (ctx, next) =>
 {
     var path = ctx.Request.Path.ToString();
     var open = path.StartsWith("/health") || path == "/v1/devices" || path.Contains("/v1/billing/activate") || path.Contains("/v1/billing/restore");
-    if (!open && ctx.Request.Headers.TryGetValue("X-Device-Token", out var tok))
+    // Ein mitgeschickter Token wird IMMER aufgeloest — auch auf offenen Pfaden.
+    // Frueher geschah das nur fuer !open, wodurch /v1/billing/restore nie eine
+    // DeviceId sah und der Controller jeden Versuch als "rate_limited" abwies:
+    // ein zahlender Nutzer kam nach einem Geraetewechsel nie wieder an sein Abo
+    // (T-BILL-RESTORE). "offen" heisst: kein Token NOETIG — nicht: Token ignorieren.
+    if (ctx.Request.Headers.TryGetValue("X-Device-Token", out var tok))
     {
         var store = ctx.RequestServices.GetRequiredService<IDeviceAuthStore>();
         if (store.TryResolve(tok.ToString(), out var deviceId)) ctx.Items["DeviceId"] = deviceId;
@@ -148,3 +161,9 @@ app.MapHub<RealtimeHub>("/hubs/v1/realtime");
 
 app.Logger.LogInformation("TransitGuard API gestartet (Lokal-Modus, In-Memory-Stores; Prod-Modus via DATABASE__APP — Ticket M4).");
 app.Run();
+
+/// <summary>
+/// Sichtbar für die Integrationstests (WebApplicationFactory&lt;Program&gt;).
+/// Top-Level-Statements erzeugen sonst eine interne Program-Klasse.
+/// </summary>
+public partial class Program { }

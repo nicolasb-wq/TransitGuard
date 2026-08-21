@@ -17,7 +17,15 @@ class Stop {
   final double? distanceKm;
   Stop({required this.stopId, required this.stopName, this.distanceKm});
   factory Stop.fromJson(Map<String, dynamic> j) => Stop(
-      stopId: j['stop_id'], stopName: j['stop_name'], distanceKm: j['distance_km']);
+      stopId: j['stop_id'] as String,
+      stopName: j['stop_name'] as String,
+      // JSON kennt keinen Unterschied zwischen 0 und 0.0: System.Text.Json
+      // serialisiert einen ganzzahligen double als `0`, und jsonDecode liefert
+      // dafuer int. Ein direktes Zuweisen an double? warf
+      // "type 'int' is not a subtype of type 'double?'" — genau dann, wenn man
+      // DIREKT an der Haltestelle steht (Entfernung 0). Am 22.08.2026 durch die
+      // echten Vertragsbeispiele aufgefallen.
+      distanceKm: (j['distance_km'] as num?)?.toDouble());
 }
 
 class Warning {
@@ -27,7 +35,7 @@ class Warning {
   factory Warning.fromJson(Map<String, dynamic> j) => Warning(
       affectedStopId: j['affected_stop_id'],
       message: j['message'],
-      etaSeconds: j['user_eta_seconds']);
+      etaSeconds: (j['user_eta_seconds'] as num?)?.toInt());
 }
 
 class Departure {
@@ -63,7 +71,7 @@ class Departure {
         headsign: j['headsign'] as String? ?? headsign,
         scheduled: DateTime.parse(j['scheduled_time']),
         estimated: j['estimated_time'] != null ? DateTime.parse(j['estimated_time']) : null,
-        delayS: j['delay_s'],
+        delayS: (j['delay_s'] as num?)?.toInt(),
         realtime: j['realtime'] == true)
       ..warnings = ((j['warnings'] ?? []) as List)
           .map((w) => Warning.fromJson(w as Map<String, dynamic>))
@@ -103,12 +111,60 @@ class ReportView {
       );
 }
 
+/// Ein Bein einer Umstiegsverbindung. Schluessel sind snake_case — das war
+/// Launch-Blocker 1 (die PWA las leg_a.RouteId und zeigte leere Liniennummern).
+class TransferLeg {
+  final String routeId;
+  final String? headsign;
+  final String boardStop, alightStop;
+  final DateTime boardAt, alightAt;
+  TransferLeg({
+    required this.routeId, required this.headsign,
+    required this.boardStop, required this.alightStop,
+    required this.boardAt, required this.alightAt,
+  });
+  factory TransferLeg.fromJson(Map<String, dynamic> j) => TransferLeg(
+        routeId: j['route_id'] as String,
+        headsign: j['headsign'] as String?,
+        boardStop: j['board_stop'] as String,
+        alightStop: j['alight_stop'] as String,
+        boardAt: DateTime.parse(j['board_at'] as String),
+        alightAt: DateTime.parse(j['alight_at'] as String),
+      );
+}
+
+/// Verbindung mit genau einem Umstieg (TransferRouter v2).
+class TransferConnection {
+  final TransferLeg legA, legB;
+  final String transferStopId;
+  final int waitSeconds, totalSeconds;
+  TransferConnection({
+    required this.legA, required this.legB, required this.transferStopId,
+    required this.waitSeconds, required this.totalSeconds,
+  });
+  factory TransferConnection.fromJson(Map<String, dynamic> j) => TransferConnection(
+        legA: TransferLeg.fromJson(j['leg_a'] as Map<String, dynamic>),
+        legB: TransferLeg.fromJson(j['leg_b'] as Map<String, dynamic>),
+        transferStopId: j['transfer_stop_id'] as String,
+        waitSeconds: (j['wait_seconds'] as num).toInt(),
+        totalSeconds: (j['total_seconds'] as num).toInt(),
+      );
+}
+
+/// Ergebnis der Fahrtensuche: Direktverbindungen UND Umstiege.
+class JourneyResult {
+  final List<Connection> direct;
+  final List<TransferConnection> transfers;
+  JourneyResult({required this.direct, required this.transfers});
+}
+
 class Me {
   final String access;
   final int trialDaysRemaining;
   Me({required this.access, required this.trialDaysRemaining});
   factory Me.fromJson(Map<String, dynamic> j) =>
-      Me(access: j['access'], trialDaysRemaining: j['trial_days_remaining']);
+      Me(access: j['access'] as String,
+          trialDaysRemaining: (j['trial_days_remaining'] as num).toInt());
 }
 
 /// Ticket-First-Gate (docs/18 H1): 24 h gemerkte Bestaetigung, geraetegebunden.
@@ -154,11 +210,17 @@ class ApiException implements Exception {
 }
 
 class Api {
+  /// Einspeisbarer HTTP-Client. In Produktion der echte, im Test ein MockClient
+  /// — nur so lassen sich REQUEST-Verträge prüfen (Pflicht-Header). Blocker 3
+  /// war genau so einer: der Server verlangt einen Idempotency-Key, die App
+  /// schickte keinen, und jede Meldung scheiterte mit 422 „validation".
+  static http.Client client = http.Client();
+
   static Future<String> ensureDeviceToken() async {
     final sp = await SharedPreferences.getInstance();
     final existing = sp.getString('tg_device_token');
     if (existing != null) return existing;
-    final r = await http.post(Uri.parse('$kApiBase/v1/devices'));
+    final r = await client.post(Uri.parse('$kApiBase/v1/devices'));
     if (r.statusCode != 201) throw ApiException('device_failed');
     final token = jsonDecode(r.body)['device_token'] as String;
     await sp.setString('tg_device_token', token);
@@ -182,8 +244,8 @@ class Api {
     final h = await _headers();
     if (extraHeaders != null) h.addAll(extraHeaders);
     final r = method == 'GET'
-        ? await http.get(Uri.parse(kApiBase + path), headers: h)
-        : await http.post(Uri.parse(kApiBase + path),
+        ? await client.get(Uri.parse(kApiBase + path), headers: h)
+        : await client.post(Uri.parse(kApiBase + path),
             headers: h, body: body == null ? null : jsonEncode(body));
     final decoded = jsonDecode(r.body.isEmpty ? '{}' : r.body);
     if (r.statusCode == 402) throw ApiException('trial_expired');
@@ -205,9 +267,21 @@ class Api {
     return (list as List).map((e) => Stop.fromJson(e)).toList();
   }
 
-  static Future<List<Connection>> journey(String fromStopId, String toStopId) async {
+  /// Fahrtensuche. Liefert Direktverbindungen UND Umstiege — letztere wurden
+  /// bis 22.08.2026 stillschweigend verworfen: die App zeigte "keine Verbindung",
+  /// wo der Server einen Umstieg angeboten hat.
+  static Future<JourneyResult> journeySearch(String fromStopId, String toStopId) async {
     final r = await _call('POST', '/v1/journeys/search',
         body: {'from_stop_id': fromStopId, 'to_stop_id': toStopId});
+    return JourneyResult(
+      direct: _direkte(r),
+      transfers: ((r['transfer_connections'] ?? []) as List)
+          .map((t) => TransferConnection.fromJson(t as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  static List<Connection> _direkte(dynamic r) {
     return ((r['direct_connections'] ?? []) as List).map((c) {
       final routeId = c['route_id'] as String?;
       final headsign = c['headsign'] as String?;

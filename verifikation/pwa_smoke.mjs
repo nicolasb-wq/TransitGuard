@@ -108,6 +108,39 @@ async function run(name, colorScheme) {
   log(`[${name}] Linien-Badges im Ergebnis: ${hatVerbindung}`);
   if (hatVerbindung === 0) fails.push(`[${name}] keine Verbindung gerendert`);
 
+  // --- Umstiegsverbindung: HHA1 → HHA5 hat KEINE Direktfahrt ----------------
+  // Hier sass Launch-Blocker 1 (leg_a.RouteId statt route_id): die Karte wurde
+  // gerendert, aber mit leeren Liniennummern. Deshalb wird auf den INHALT
+  // geprueft, nicht auf die blosse Existenz der Karte.
+  await page.getByRole('button', { name: 'ändern' }).last().click();
+  await page.getByLabel('Ziel-Haltestelle').fill('Farmsen');
+  await page.getByRole('group', { name: 'Treffer' })
+            .getByRole('button', { name: 'Farmsen' }).click();
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: `${OUT}/${name}-2b-umstieg.png`, fullPage: true });
+
+  const umstiegKarte = page.locator('section.card').filter({ hasText: 'MIT EINEM UMSTIEG' });
+  if (await umstiegKarte.count() === 0) {
+    fails.push(`[${name}] Umstiegs-Karte fehlt (HHA1 → HHA5 hat keine Direktfahrt)`);
+  } else {
+    const linien = (await umstiegKarte.locator('.route').allTextContents()).map(t => t.trim());
+    log(`[${name}] Umstieg zeigt Linien: ${JSON.stringify(linien)}`);
+    if (linien.length < 2) fails.push(`[${name}] Umstieg zeigt ${linien.length} Linien statt 2`);
+    if (linien.some(l => l === '')) fails.push(`[${name}] leere Liniennummer im Umstieg — genau Blocker 1`);
+    if (!linien.includes('R_U1') || !linien.includes('R_U2')) {
+      fails.push(`[${name}] falsche Liniennummern im Umstieg: ${JSON.stringify(linien)}`);
+    }
+    const text = await umstiegKarte.innerText();
+    if (!/umsteigen/i.test(text)) fails.push(`[${name}] Umstiegszeile ohne Umsteige-Hinweis`);
+  }
+
+  // Zurueck auf eine Direktstrecke — dort haengt der Melde-Knopf an der Abfahrt.
+  await page.getByRole('button', { name: 'ändern' }).last().click();
+  await page.getByLabel('Ziel-Haltestelle').fill('Kelling');
+  await page.getByRole('group', { name: 'Treffer' })
+            .getByRole('button', { name: 'Kellinghusenstrasse' }).click();
+  await page.waitForTimeout(1200);
+
   // --- Ticket-Gate: MUSS erscheinen, bevor gemeldet werden kann -------------
   await page.getByRole('button', { name: /Kontrollhinweis für Linie/ }).first().click();
   const gate = page.getByRole('dialog', { name: /gültigem Ticket/ });

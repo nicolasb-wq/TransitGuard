@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "validation",
+    "message": "lat+lon oder q erforderlich"
+  }
+}

@@ -280,7 +280,12 @@ public sealed class BillingController(IEntitlementStore store, RateLimiter limit
     [HttpPost("/v1/billing/restore")]
     public IActionResult Restore([FromBody] RestoreRequest req)
     {
-        if (HttpContext.Items["DeviceId"] is not Guid id || !limiter.Allow("billing:restore", id))
+        // Fehlendes Geraet und Ratenbegrenzung sind zwei verschiedene Dinge und
+        // brauchen zwei verschiedene Antworten — zusammengeworfen verschleiern sie
+        // die Ursache (T-BILL-RESTORE-3).
+        if (HttpContext.Items["DeviceId"] is not Guid id)
+            return Unauthorized(new ApiError { Body = new() { Code = "unauthorized", Message = "X-Device-Token erforderlich (POST /v1/devices)" } }.Body);
+        if (!limiter.Allow("billing:restore", id))
             return StatusCode(429, new ApiError { Body = new() { Code = "rate_limited", Message = "5 Versuche/h" } });
         var rec = store.Restore(req.RestoreCode ?? "", out var token, out var error);
         if (rec is null) return StatusCode(403, new ApiError { Body = new() { Code = error!, Message = "Code ungültig" } });

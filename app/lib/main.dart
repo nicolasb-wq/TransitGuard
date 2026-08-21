@@ -49,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _startWaehlen = false;
   List<Stop> _treffer = [];
   List<Connection> _verbindungen = [];
+  List<TransferConnection> _umstiege = [];
   bool _sucheLaeuft = false, _ortet = false, _sucheZiel = false;
 
   // Warnen
@@ -167,10 +168,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _sucheVerbindung() async {
     final von = _von, nach = _nach;
     if (von == null || nach == null) return;
-    setState(() { _sucheLaeuft = true; _verbindungen = []; });
+    setState(() { _sucheLaeuft = true; _verbindungen = []; _umstiege = []; });
     try {
-      final c = await Api.journey(von.stopId, nach.stopId);
-      if (mounted) setState(() => _verbindungen = c);
+      final r = await Api.journeySearch(von.stopId, nach.stopId);
+      if (mounted) setState(() { _verbindungen = r.direct; _umstiege = r.transfers; });
     } on ApiException catch (e) {
       _sagFehler(e);
     } catch (e) {
@@ -371,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ]), overflow: TextOverflow.ellipsis),
                 ),
                 TextButton(
-                  onPressed: () => setState(() { _nach = null; _verbindungen = []; }),
+                  onPressed: () => setState(() { _nach = null; _verbindungen = []; _umstiege = []; }),
                   child: const Text('ändern'),
                 ),
               ]),
@@ -391,14 +392,47 @@ class _HomeScreenState extends State<HomeScreen> {
             _leer(Icons.explore_outlined, 'Tippe auf „Standort" — wir finden die Haltestelle neben dir.')
           else if (_nach == null)
             _leer(Icons.place_outlined, 'Jetzt noch das Ziel eingeben.')
-          else if (_verbindungen.every((c) => c.next.isEmpty))
-            _leer(Icons.nightlight_outlined, 'Von hier fährt heute nichts mehr direkt dorthin.')
-          else
-            _karte('Direkt', [
-              for (final c in _verbindungen.where((c) => c.next.isNotEmpty))
-                _verbindung(c),
-            ]),
+          else if (_verbindungen.every((c) => c.next.isEmpty) && _umstiege.isEmpty)
+            _leer(Icons.nightlight_outlined, 'Von hier fährt heute nichts mehr dorthin.')
+          else ...[
+            // Umstiege zuerst: wo es keine Direktfahrt gibt, sind sie die Antwort.
+            if (_umstiege.isNotEmpty)
+              _karte('Mit einem Umstieg', [
+                for (final u in _umstiege) _umstiegZeile(u),
+              ]),
+            if (_verbindungen.any((c) => c.next.isNotEmpty))
+              _karte('Direkt', [
+                for (final c in _verbindungen.where((c) => c.next.isNotEmpty))
+                  _verbindung(c),
+              ]),
+          ],
         ],
+      );
+
+  /// Eine Umstiegsverbindung — BEIDE Liniennummern sichtbar. Genau die zu zeigen
+  /// war der Kern von Launch-Blocker 1 (die PWA las leg_a.RouteId statt route_id
+  /// und rendere leere Plaketten); die Flutter-App zeigte Umstiege bis 22.08.2026
+  /// gar nicht, weil Api.journey sie stillschweigend verwarf.
+  Widget _umstiegZeile(TransferConnection u) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            RoutePlakette(u.legA.routeId),
+            const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.arrow_forward, size: 16)),
+            RoutePlakette(u.legB.routeId),
+            const Spacer(),
+            Text('${(u.totalSeconds / 60).round()} min',
+                style: Theme.of(context).textTheme.bodySmall),
+          ]),
+          const SizedBox(height: 6),
+          Text(
+            'Ab ${_uhr(u.legA.boardAt.toLocal())} · umsteigen ${_uhr(u.legA.alightAt.toLocal())} '
+            '(${(u.waitSeconds / 60).round()} min warten) · an ${_uhr(u.legB.alightAt.toLocal())}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ]),
       );
 
   Widget _verbindung(Connection c) => Column(

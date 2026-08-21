@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "receipt_already_used",
+    "message": "Receipt bereits benutzt"
+  }
+}

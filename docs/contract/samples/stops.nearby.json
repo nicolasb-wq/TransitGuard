@@ -1,0 +1,30 @@
+[
+  {
+    "stop_id": "HHA1",
+    "stop_name": "Jungfernstieg",
+    "lat": 53.554,
+    "lon": 9.991,
+    "distance_km": 0
+  },
+  {
+    "stop_id": "HHA2",
+    "stop_name": "Stephansplatz",
+    "lat": 53.559,
+    "lon": 9.993,
+    "distance_km": 0.571
+  },
+  {
+    "stop_id": "HHA3",
+    "stop_name": "Kellinghusenstrasse",
+    "lat": 53.573,
+    "lon": 9.986,
+    "distance_km": 2.138
+  },
+  {
+    "stop_id": "HHA4",
+    "stop_name": "Wandsbek Gartenstadt",
+    "lat": 53.603,
+    "lon": 10.049,
+    "distance_km": 6.659
+  }
+]

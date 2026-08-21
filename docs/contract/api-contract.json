@@ -1,0 +1,884 @@
+{
+  "erzeugtVon": "verifikation/contract_capture.mjs",
+  "endpunkte": {
+    "billing.activate": {
+      "methode": "POST",
+      "pfad": "/v1/billing/activate",
+      "status": 201,
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "access_token": {
+          "typen": [
+            "string"
+          ]
+        },
+        "restore_code": {
+          "typen": [
+            "string"
+          ]
+        },
+        "tier": {
+          "typen": [
+            "string"
+          ]
+        },
+        "valid_until": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "billing.activate.konflikt": {
+      "methode": "POST",
+      "pfad": "/v1/billing/activate (Beleg erneut)",
+      "status": 409,
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "error": {
+          "typen": [
+            "object"
+          ]
+        },
+        "error.code": {
+          "typen": [
+            "string"
+          ]
+        },
+        "error.message": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "billing.restore": {
+      "methode": "POST",
+      "pfad": "/v1/billing/restore",
+      "status": 201,
+      "erfordert": {
+        "headers": [
+          "X-Device-Token"
+        ]
+      },
+      "hinweis": "Restore ROTIERT den Zugangstoken — der Token des alten Geraets wird dabei ungueltig. Beabsichtigt (ein Abo, ein Geraet), aber ein Client darf nach einem Restore nicht mehr mit dem alten Token weiterarbeiten.",
+      "belegtDurch": [
+        {
+          "ohne": "X-Device-Token",
+          "status": 401
+        }
+      ],
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "access_token": {
+          "typen": [
+            "string"
+          ]
+        },
+        "tier": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "billing.validate": {
+      "methode": "POST",
+      "pfad": "/v1/billing/validate",
+      "status": 200,
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "status": {
+          "typen": [
+            "string"
+          ]
+        },
+        "tier": {
+          "typen": [
+            "string"
+          ]
+        },
+        "valid_until": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "billing.validate.abgelaufen": {
+      "methode": "POST",
+      "pfad": "/v1/billing/validate (alter Token nach Restore)",
+      "status": 403,
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "error": {
+          "typen": [
+            "object"
+          ]
+        },
+        "error.code": {
+          "typen": [
+            "string"
+          ]
+        },
+        "error.message": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "cities.alerts": {
+      "methode": "GET",
+      "pfad": "/v1/cities/{slug}/alerts",
+      "unbeobachtet": true,
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "array"
+          ]
+        }
+      }
+    },
+    "cities.events": {
+      "methode": "GET",
+      "pfad": "/v1/cities/{slug}/events",
+      "erfordert": {
+        "headers": [
+          "X-Device-Token",
+          "X-Ticket-Confirmed"
+        ]
+      },
+      "belegtDurch": [
+        {
+          "ohne": "X-Ticket-Confirmed",
+          "status": 403,
+          "code": "ticket_gate_blocked"
+        }
+      ],
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "array"
+          ]
+        },
+        "[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "[].created_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].event_id": {
+          "typen": [
+            "number"
+          ]
+        },
+        "[].report_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].type": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "cities.list": {
+      "methode": "GET",
+      "pfad": "/v1/cities",
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "array"
+          ]
+        },
+        "[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "[].display_name": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].is_active": {
+          "typen": [
+            "boolean"
+          ]
+        },
+        "[].slug": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "devices.issue": {
+      "methode": "POST",
+      "pfad": "/v1/devices",
+      "status": 201,
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "device_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "device_token": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "devices.me": {
+      "methode": "GET",
+      "pfad": "/v1/devices/me",
+      "erfordert": {
+        "headers": [
+          "X-Device-Token"
+        ]
+      },
+      "belegtDurch": [
+        {
+          "ohne": "X-Device-Token",
+          "status": 401
+        }
+      ],
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "access": {
+          "typen": [
+            "string"
+          ]
+        },
+        "rank": {
+          "typen": [
+            "string"
+          ]
+        },
+        "subscription_price_eur": {
+          "typen": [
+            "number"
+          ]
+        },
+        "total_reports": {
+          "typen": [
+            "number"
+          ]
+        },
+        "trial_days_remaining": {
+          "typen": [
+            "number"
+          ]
+        },
+        "trust_score": {
+          "typen": [
+            "number"
+          ]
+        }
+      }
+    },
+    "fehler.validation": {
+      "methode": "GET",
+      "pfad": "/v1/cities/{slug}/stops/nearby (Fehlerfall)",
+      "status": 422,
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "error": {
+          "typen": [
+            "object"
+          ]
+        },
+        "error.code": {
+          "typen": [
+            "string"
+          ]
+        },
+        "error.message": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "health.live": {
+      "methode": "GET",
+      "pfad": "/health/live",
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "status": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "health.ready": {
+      "methode": "GET",
+      "pfad": "/health/ready",
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "status": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "journeys.search": {
+      "methode": "POST",
+      "pfad": "/v1/journeys/search",
+      "hinweis": "next_departures traegt KEIN route_id/headsign — die stehen auf der Verbindung. Genau diese Asymmetrie war Launch-Blocker 2 (Flutter-TypeError).",
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "direct_connections": {
+          "typen": [
+            "array"
+          ]
+        },
+        "direct_connections[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "direct_connections[].direction_id": {
+          "typen": [
+            "number"
+          ]
+        },
+        "direct_connections[].headsign": {
+          "typen": [
+            "string"
+          ]
+        },
+        "direct_connections[].next_departures": {
+          "typen": [
+            "array"
+          ]
+        },
+        "direct_connections[].next_departures[]": {
+          "typen": [
+            "object"
+          ],
+          "optional": true
+        },
+        "direct_connections[].next_departures[].realtime": {
+          "typen": [
+            "boolean"
+          ]
+        },
+        "direct_connections[].next_departures[].scheduled_time": {
+          "typen": [
+            "string"
+          ]
+        },
+        "direct_connections[].next_departures[].trip_ref": {
+          "typen": [
+            "object"
+          ]
+        },
+        "direct_connections[].next_departures[].trip_ref.start_date": {
+          "typen": [
+            "string"
+          ]
+        },
+        "direct_connections[].next_departures[].trip_ref.trip_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "direct_connections[].next_departures[].warnings": {
+          "typen": [
+            "array"
+          ]
+        },
+        "direct_connections[].ride_seconds": {
+          "typen": [
+            "number"
+          ]
+        },
+        "direct_connections[].route_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "direct_connections[].stops_count": {
+          "typen": [
+            "number"
+          ]
+        },
+        "from_stop_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "to_stop_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections": {
+          "typen": [
+            "array"
+          ]
+        },
+        "transfer_connections[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "transfer_connections[].leg_a": {
+          "typen": [
+            "object"
+          ]
+        },
+        "transfer_connections[].leg_a.alight_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_a.alight_stop": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_a.board_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_a.board_stop": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_a.headsign": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_a.route_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_b": {
+          "typen": [
+            "object"
+          ]
+        },
+        "transfer_connections[].leg_b.alight_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_b.alight_stop": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_b.board_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_b.board_stop": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_b.headsign": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].leg_b.route_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].total_seconds": {
+          "typen": [
+            "number"
+          ]
+        },
+        "transfer_connections[].transfer_stop_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "transfer_connections[].wait_seconds": {
+          "typen": [
+            "number"
+          ]
+        }
+      }
+    },
+    "journeys.warnings": {
+      "methode": "GET",
+      "pfad": "/v1/journeys/{tripId}/warnings",
+      "unbeobachtet": true,
+      "erfordert": {
+        "headers": [
+          "X-Device-Token",
+          "X-Ticket-Confirmed"
+        ]
+      },
+      "belegtDurch": [
+        {
+          "ohne": "X-Ticket-Confirmed",
+          "status": 403,
+          "code": "ticket_gate_blocked"
+        }
+      ],
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "array"
+          ]
+        }
+      }
+    },
+    "reports.create": {
+      "methode": "POST",
+      "pfad": "/v1/reports",
+      "status": 201,
+      "erfordert": {
+        "headers": [
+          "X-Device-Token",
+          "Idempotency-Key"
+        ],
+        "body": [
+          "client.ticket_confirmed = true"
+        ]
+      },
+      "belegtDurch": [
+        {
+          "ohne": "Idempotency-Key",
+          "status": 422,
+          "code": "validation"
+        },
+        {
+          "ohne": "client.ticket_confirmed",
+          "status": 422,
+          "code": "ticket_confirmation_required"
+        }
+      ],
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "object"
+          ]
+        },
+        "anchor_type": {
+          "typen": [
+            "string"
+          ]
+        },
+        "city_slug": {
+          "typen": [
+            "string"
+          ]
+        },
+        "created_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "expires_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "origin": {
+          "typen": [
+            "string"
+          ]
+        },
+        "report_type": {
+          "typen": [
+            "string"
+          ]
+        },
+        "station_name": {
+          "typen": [
+            "string"
+          ]
+        },
+        "status": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    },
+    "reports.event": {
+      "methode": "POST",
+      "pfad": "/v1/reports/{id}/events",
+      "unbeobachtet": true,
+      "status": 204,
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "null"
+          ]
+        }
+      }
+    },
+    "reports.list": {
+      "methode": "GET",
+      "pfad": "/v1/cities/{slug}/reports",
+      "hinweis": "route_id/headsign/trip_id nur bei Trip-Anker — bei Stations-Anker fehlen sie (WhenWritingNull). Deshalb optional.",
+      "erfordert": {
+        "headers": [
+          "X-Device-Token",
+          "X-Ticket-Confirmed"
+        ]
+      },
+      "belegtDurch": [
+        {
+          "ohne": "X-Ticket-Confirmed",
+          "status": 403,
+          "code": "ticket_gate_blocked"
+        }
+      ],
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "array"
+          ]
+        },
+        "[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "[].anchor_type": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].city_slug": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].created_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].expires_at": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].headsign": {
+          "typen": [
+            "string"
+          ],
+          "optional": true
+        },
+        "[].id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].origin": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].report_type": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].route_id": {
+          "typen": [
+            "string"
+          ],
+          "optional": true
+        },
+        "[].station_name": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].status": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].trip_id": {
+          "typen": [
+            "string"
+          ],
+          "optional": true
+        },
+        "[].trip_start_date": {
+          "typen": [
+            "string"
+          ],
+          "optional": true
+        }
+      }
+    },
+    "stops.departures": {
+      "methode": "GET",
+      "pfad": "/v1/stops/{stopId}/departures",
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "array"
+          ]
+        },
+        "[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "[].headsign": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].realtime": {
+          "typen": [
+            "boolean"
+          ]
+        },
+        "[].route_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].scheduled_time": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].trip_ref": {
+          "typen": [
+            "object"
+          ]
+        },
+        "[].trip_ref.start_date": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].trip_ref.trip_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].warnings": {
+          "typen": [
+            "array"
+          ]
+        }
+      }
+    },
+    "stops.nearby": {
+      "methode": "GET",
+      "pfad": "/v1/cities/{slug}/stops/nearby",
+      "hinweis": "distance_km nur bei lat/lon-Suche — Namenssuche liefert es nicht.",
+      "felder": {
+        "(wurzel)": {
+          "typen": [
+            "array"
+          ]
+        },
+        "[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "[].distance_km": {
+          "typen": [
+            "number"
+          ],
+          "optional": true
+        },
+        "[].lat": {
+          "typen": [
+            "number"
+          ]
+        },
+        "[].lon": {
+          "typen": [
+            "number"
+          ]
+        },
+        "[].stop_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].stop_name": {
+          "typen": [
+            "string"
+          ]
+        }
+      }
+    }
+  }
+}

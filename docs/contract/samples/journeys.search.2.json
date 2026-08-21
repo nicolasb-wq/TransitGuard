@@ -1,0 +1,28 @@
+{
+  "from_stop_id": "HHA1",
+  "to_stop_id": "HHA5",
+  "direct_connections": [],
+  "transfer_connections": [
+    {
+      "total_seconds": 840,
+      "transfer_stop_id": "HHA3",
+      "wait_seconds": 240,
+      "leg_a": {
+        "route_id": "R_U1",
+        "headsign": "Kellinghusenstrasse",
+        "board_stop": "HHA1",
+        "alight_stop": "HHA3",
+        "board_at": "2026-08-21T20:00:00+00:00",
+        "alight_at": "2026-08-21T20:00:00+00:00"
+      },
+      "leg_b": {
+        "route_id": "R_U2",
+        "headsign": "Farmsen",
+        "board_stop": "HHA3",
+        "alight_stop": "HHA5",
+        "board_at": "2026-08-21T20:00:00+00:00",
+        "alight_at": "2026-08-21T20:00:00+00:00"
+      }
+    }
+  ]
+}

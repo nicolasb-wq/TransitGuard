@@ -32,9 +32,11 @@ public sealed class StaticSyncJobTests
         var result = await job.RunAsync(new HttpClient(new FakeHttp(zip)), "https://example/static.zip", "hamburg", Hamburg);
 
         Assert.True(result.Success);
-        Assert.Equal(3, whitelist.Count);
-        Assert.Equal(3, ((System.Collections.IDictionary)schedules.Inner).Count);
-        Assert.Equal(4, stops.Count);
+        // Kennzahlen der Fixture (verifikation/build_static_mini.py):
+        // 3 Bestandsfahrten + 2 × 72 Taktfahrten der Umstiegsstrecke, 5 Halte in Box.
+        Assert.Equal(147, whitelist.Count);
+        Assert.Equal(147, ((System.Collections.IDictionary)schedules.Inner).Count);
+        Assert.Equal(5, stops.Count);
         Assert.NotNull(builds.ActiveBuildId("hamburg"));
     }
 

@@ -1,0 +1,57 @@
+[
+  {
+    "trip_ref": {
+      "trip_id": "T_U1_064",
+      "start_date": "20260821"
+    },
+    "route_id": "R_U1",
+    "headsign": "Kellinghusenstrasse",
+    "scheduled_time": "2026-08-21T20:00:00+00:00",
+    "realtime": false,
+    "warnings": []
+  },
+  {
+    "trip_ref": {
+      "trip_id": "T_U1_065",
+      "start_date": "20260821"
+    },
+    "route_id": "R_U1",
+    "headsign": "Kellinghusenstrasse",
+    "scheduled_time": "2026-08-21T20:00:00+00:00",
+    "realtime": false,
+    "warnings": []
+  },
+  {
+    "trip_ref": {
+      "trip_id": "T_U1_066",
+      "start_date": "20260821"
+    },
+    "route_id": "R_U1",
+    "headsign": "Kellinghusenstrasse",
+    "scheduled_time": "2026-08-21T20:00:00+00:00",
+    "realtime": false,
+    "warnings": []
+  },
+  {
+    "trip_ref": {
+      "trip_id": "T_U1_067",
+      "start_date": "20260821"
+    },
+    "route_id": "R_U1",
+    "headsign": "Kellinghusenstrasse",
+    "scheduled_time": "2026-08-21T20:00:00+00:00",
+    "realtime": false,
+    "warnings": []
+  },
+  {
+    "trip_ref": {
+      "trip_id": "T_U1_068",
+      "start_date": "20260821"
+    },
+    "route_id": "R_U1",
+    "headsign": "Kellinghusenstrasse",
+    "scheduled_time": "2026-08-21T20:00:00+00:00",
+    "realtime": false,
+    "warnings": []
+  }
+]

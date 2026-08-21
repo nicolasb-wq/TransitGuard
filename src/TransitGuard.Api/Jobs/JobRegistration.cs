@@ -11,6 +11,29 @@ namespace TransitGuard.Api.Jobs;
 /// Ingest:Enabled — Local-Modus holt bewusst keinen 40-MB-Feed), PartitionMaint täglich,
 /// StaticSync 2×/Woche. Dashboard unter /admin/hangfire (Prod: hinter Caddy-Basic-Auth, 10-deployment §7).
 /// </summary>
+/// <summary>
+/// Zeitpläne als benannte Konstanten — damit sie testbar sind (T-CRON).
+/// Am 22.08.2026 stand hier für rt-poll <c>"*/60 * * * * *"</c>; das Sekundenfeld
+/// erlaubt nur 1–59, Hangfire warf beim Registrieren eine CronFormatException und
+/// die API startete mit eingeschaltetem Ingest überhaupt nicht.
+/// „Alle 60 Sekunden" schreibt man als Sekunde 0 jeder Minute.
+/// </summary>
+public static class JobSchedules
+{
+    public const string TtlSweep = "*/15 * * * * *";      // alle 15 s (docs/07 §1)
+    public const string RtPoll = "0 * * * * *";           // jede Minute zur Sekunde 0 = alle 60 s
+    public const string PartitionMaint = "0 4 * * *";     // täglich 04:00 UTC
+    public const string StaticSync = "0 3 * * 2,6";       // Di+Sa 03:00 UTC
+
+    public static IReadOnlyDictionary<string, string> Alle { get; } = new Dictionary<string, string>
+    {
+        ["ttl-sweep"] = TtlSweep,
+        ["rt-poll"] = RtPoll,
+        ["partition-maint"] = PartitionMaint,
+        ["static-sync"] = StaticSync,
+    };
+}
+
 public static class JobRegistration
 {
     public static void RegisterRecurringJobs(this IServiceProvider services, bool ingestEnabled, string feedUrl, string cityId)
@@ -19,16 +42,16 @@ public static class JobRegistration
         var health = services.GetRequiredService<FeedHealthProvider>();
 
         RecurringJob.AddOrUpdate<TtlSweepInvoker>("ttl-sweep",
-            x => x.Run(health.Current.IsHealthy), "*/15 * * * * *", new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+            x => x.Run(health.Current.IsHealthy), JobSchedules.TtlSweep, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-        RecurringJob.AddOrUpdate<PartitionMaintInvoker>("partition-maint", x => x.Run(), "0 4 * * *", new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+        RecurringJob.AddOrUpdate<PartitionMaintInvoker>("partition-maint", x => x.Run(), JobSchedules.PartitionMaint, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
         if (ingestEnabled)
         {
             var poll = services.GetRequiredService<PollRealtimeJob>();
             RecurringJob.AddOrUpdate<PollRealtimeInvoker>("rt-poll",
-                x => x.Run(feedUrl, cityId), "*/60 * * * * *", new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
-            RecurringJob.AddOrUpdate<StaticSyncInvoker>("static-sync", x => x.Run(), "0 3 * * 2,6", new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+                x => x.Run(feedUrl, cityId), JobSchedules.RtPoll, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+            RecurringJob.AddOrUpdate<StaticSyncInvoker>("static-sync", x => x.Run(), JobSchedules.StaticSync, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
         }
     }
 }

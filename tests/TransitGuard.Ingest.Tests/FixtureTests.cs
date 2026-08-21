@@ -88,16 +88,28 @@ public sealed class CityExtractorTests
         using var gtfs = new GtfsStaticArchive(fs);
         var x = CityExtractor.Extract(gtfs, Hamburg);
 
-        Assert.Equal(4, x.StopsInBox);                 // HHA1-4 in Box, XX1/XX2 draußen
-        Assert.Equal(3, x.TripsInBox);                 // T_HH_1..T_HH_3
-        Assert.Equal(3, x.Whitelist.Count);
-        Assert.Equal(3, x.Schedules.Count);
-        Assert.Equal(4, x.Stops.Count);
+        // Fixture-Kennzahlen — erzeugt von verifikation/build_static_mini.py.
+        // Seit 22.08.2026 enthält sie zusätzlich HHA5 (Farmsen) und die Linie U2
+        // im 20-Minuten-Takt, damit HHA1→HHA5 einen echten UMSTIEG erzwingt
+        // (vorher lag jede Haltestelle auf derselben Linie — Umstiegsverbindungen
+        // kamen in keinem Test vor, und genau dort saß Launch-Blocker 1).
+        Assert.Equal(5, x.StopsInBox);                 // HHA1-5 in Box, XX1/XX2 draußen
+        Assert.Equal(147, x.TripsInBox);               // T_HH_1..3 + 2 × 72 Taktfahrten
+        Assert.Equal(147, x.Whitelist.Count);
+        Assert.Equal(147, x.Schedules.Count);
+        Assert.Equal(5, x.Stops.Count);
         Assert.Contains("T_HH_1", x.Whitelist.Keys);
         Assert.Equal("R_U1", x.Whitelist["T_HH_1"].RouteId);
         Assert.Equal("HHA4", x.Whitelist["T_HH_1"].LastStopId);          // höchste Sequenz
         Assert.Equal(36360, x.Whitelist["T_HH_1"].EndTimeSeconds);       // 36000 + 3*120
         Assert.DoesNotContain("T_XX_1", x.Whitelist.Keys);
+
+        // Umstiegsstrecke: U2 bedient HHA5, U1 nicht — sonst gäbe es eine Direktfahrt.
+        Assert.Contains("T_U2_000", x.Whitelist.Keys);
+        Assert.Equal("R_U2", x.Whitelist["T_U2_000"].RouteId);
+        Assert.Equal("HHA5", x.Whitelist["T_U2_000"].LastStopId);
+        Assert.DoesNotContain(x.Schedules.Values,
+            sp => sp.Stops.Any(h => h.StopId == "HHA1") && sp.Stops.Any(h => h.StopId == "HHA5"));
 
         // Fahrplan-Schedules für Fahrtensuche (Auftrag 21.08.): Richtung A→HHA4
         var sched = x.Schedules["T_HH_1"];

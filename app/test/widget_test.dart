@@ -1,7 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:transitguard/api.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:transitguard/main.dart';
+import 'package:transitguard/theme.dart';
 
 /// Widget-Vertrag der App-Hülle. Prüft nicht „ein Banner ist da", sondern die
 /// Zusage selbst: Der Kontroll-Teil ist ohne Ticket-Bestätigung verschlossen
@@ -9,6 +16,8 @@ import 'package:transitguard/main.dart';
 /// verschlossen bleibt.
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  _umstiegsTests();
 
   Future<void> starte(WidgetTester tester) async {
     await tester.pumpWidget(const TransitGuardApp());
@@ -83,5 +92,42 @@ void main() {
         expect(texte.contains(verboten), isFalse, reason: 'verbotene Formulierung „$verboten" im Tab $tab');
       }
     }
+  });
+}
+
+/// T-TRANSFER-UI: Die Oberfläche muss BEIDE Liniennummern einer Umstiegs-
+/// verbindung zeigen. Gespeist wird sie mit der echten, aufgezeichneten
+/// Serverantwort (docs/contract/samples/journeys.search.2.json) — nicht mit
+/// einem von Hand gebauten Wunschobjekt.
+void _umstiegsTests() {
+  testWidgets('Umstieg zeigt beide Liniennummern und die Wartezeit', (tester) async {
+    SharedPreferences.setMockInitialValues({'tg_device_token': 'DEV'});
+    final antwort = File('../docs/contract/samples/journeys.search.2.json').readAsStringSync();
+    final erwartet = jsonDecode(antwort)['transfer_connections'][0] as Map<String, dynamic>;
+
+    Api.client = MockClient((req) async {
+      if (req.url.path.endsWith('/v1/journeys/search')) return http.Response(antwort, 200);
+      if (req.url.path.endsWith('/stops/nearby')) {
+        return http.Response(File('../docs/contract/samples/stops.nearby.json').readAsStringSync(), 200);
+      }
+      return http.Response('{}', 200);
+    });
+    addTearDown(() => Api.client = http.Client());
+
+    final ergebnis = await Api.journeySearch('HHA1', 'HHA5');
+    expect(ergebnis.transfers, hasLength(1));
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Builder(builder: (c) => Column(children: [
+        RoutePlakette(ergebnis.transfers.first.legA.routeId),
+        RoutePlakette(ergebnis.transfers.first.legB.routeId),
+        Text('${(ergebnis.transfers.first.waitSeconds / 60).round()} min warten'),
+      ]))),
+    ));
+    await tester.pump();
+
+    expect(find.text(erwartet['leg_a']['route_id'] as String), findsOneWidget);
+    expect(find.text(erwartet['leg_b']['route_id'] as String), findsOneWidget);
+    expect(find.textContaining('min warten'), findsOneWidget);
   });
 }

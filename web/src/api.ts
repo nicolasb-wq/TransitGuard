@@ -1,12 +1,46 @@
 // ---------------------------------------------------------------------------
-// API-Client. Basis-URL via VITE_API_URL (Prod) oder gleicher Origin/Dev-Proxy.
-// Die Typen bilden den SERVER-Vertrag ab (docs/04, snake_case) — gegen eine
-// laufende Instanz nachgemessen, nicht aus dem Controller abgeschrieben.
+// API-Client der PWA.
+//
+// Die Typen werden NICHT hier zweitgeschrieben, sondern aus dem aufgezeichneten
+// Server-Vertrag abgeleitet (docs/contract/api-contract.json →
+// src/contract.gen.ts). Benennt der Server ein Feld um, ändert sich die
+// generierte Datei und jede Lesestelle im Client wird zum Compile-Fehler.
+// Das ist die strukturelle Antwort auf drei Launch-Blocker vom 21.08.2026,
+// die alle Vertragsdrift waren.
+//
+// Grenze, die der Vertrag NICHT abdeckt: Er kennt nur, was die Aufzeichnung
+// gesehen hat. Ein Feld, das der Server als nullable führt, aber in der Fixture
+// nie null war, erscheint hier als nicht-nullable. Der Vertrag fängt also
+// Umbenennungen und Strukturbrüche — nicht jede denkbare Nullability.
+// Defensive Prüfungen im UI bleiben deshalb richtig.
 // ---------------------------------------------------------------------------
+import type * as V from './contract.gen';
+
 export const API_BASE = import.meta.env.VITE_API_URL ?? '';
 export const CITY = 'hamburg';
 
-export interface Stop { stop_id: string; stop_name: string; lat: number; lon: number; distance_km?: number }
+// --- Aus dem Vertrag abgeleitet --------------------------------------------
+export type Stop = V.StopsNearbyResponse[number];
+export type Me = V.DevicesMeResponse;
+export type ReportView = V.ReportsListResponse[number];
+
+export type TransferConnection = V.JourneysSearchResponse['transfer_connections'][number];
+export type TransferLeg = TransferConnection['leg_a'];
+
+/**
+ * Verbindung — Feldnamen aus dem Vertrag, nur `next_departures` bewusst
+ * aufgeweitet: das Element von `warnings` ist im Lokal-Modus nicht
+ * aufzeichenbar (kein Ingest, keine passende aktive Meldung), der Vertrag führt
+ * es deshalb als `unknown[]`. Die Namen der Warnfelder sind stattdessen
+ * serverseitig durch T-RTSHAPE-2 festgenagelt.
+ */
+export type Connection =
+  Omit<V.JourneysSearchResponse['direct_connections'][number], 'next_departures'>
+  & { next_departures: Departure[] };
+
+/** Antwort der Fahrtensuche mit der aufgeweiteten Verbindung. */
+export type JourneyResult =
+  Omit<V.JourneysSearchResponse, 'direct_connections'> & { direct_connections: Connection[] };
 
 export interface ControlWarning {
   affected_stop_id: string;
@@ -15,62 +49,32 @@ export interface ControlWarning {
   message: string;
 }
 
-export interface Departure {
-  trip_ref: { trip_id: string; start_date: string };
-  /**
-   * ACHTUNG Vertrags-Asymmetrie (gemessen 21.08.2026):
-   * GET /v1/stops/{id}/departures liefert route_id/headsign MIT,
-   * POST /v1/journeys/search liefert sie NICHT — dort stehen sie auf der
-   * Verbindung (Connection), nicht auf der Abfahrt. Deshalb optional; die
-   * Oberfläche reicht die Werte der Verbindung durch (siehe Fahren-Screen).
-   */
-  route_id?: string;
-  headsign?: string | null;
-  scheduled_time: string;
-  estimated_time?: string | null;
-  delay_s?: number | null;   // fehlt im JSON, wenn null (WhenWritingNull)
-  realtime: boolean;
-  warnings?: ControlWarning[] | null;
-}
+/**
+ * Abfahrt. Basis ist die Form aus der Fahrtensuche; die Echtzeit-Anteile
+ * (delay_s, estimated_time, warnings[]) und route_id/headsign sind ergänzt,
+ * weil sie im Lokal-Modus nicht aufzeichenbar sind — dort läuft kein Ingest.
+ * Ihre Feldnamen sind stattdessen serverseitig durch T-RTSHAPE festgenagelt
+ * (tests/TransitGuard.Api.Tests/RealtimeShapeTests.cs).
+ *
+ * ACHTUNG Vertrags-Asymmetrie: POST /v1/journeys/search liefert route_id und
+ * headsign NICHT auf der Abfahrt (dort stehen sie auf der Verbindung),
+ * GET /v1/stops/{id}/departures dagegen schon. Deshalb beide optional.
+ */
+export type Departure =
+  Omit<V.JourneysSearchResponse['direct_connections'][number]['next_departures'][number], 'warnings'> & {
+    route_id?: string;
+    headsign?: string | null;
+    delay_s?: number | null;
+    estimated_time?: string | null;
+    warnings?: ControlWarning[] | null;
+  };
 
-export interface Connection {
-  route_id: string; direction_id?: number | null; headsign?: string | null;
-  ride_seconds: number; stops_count: number; next_departures: Departure[];
-}
-
-/** Ein Bein einer Umstiegsverbindung. Server-Schlüssel sind snake_case. */
-export interface TransferLeg {
-  route_id: string; headsign?: string | null;
-  board_stop: string; alight_stop: string;
-  board_at: string; alight_at: string;
-}
-
-export interface TransferConnection {
-  total_seconds: number; transfer_stop_id: string; wait_seconds: number;
-  leg_a: TransferLeg; leg_b: TransferLeg;
-}
-
-export interface JourneyResult {
-  from_stop_id: string; to_stop_id: string;
-  direct_connections: Connection[];
-  transfer_connections: TransferConnection[];
-}
-
-export interface Me {
-  trust_score: number; rank: string; total_reports: number;
-  access: 'trial' | 'subscriber' | 'locked';
-  trial_days_remaining: number; subscription_price_eur: number;
-}
-
-/** Free-Sicht auf eine Kontroll-Meldung (Pro-Felder fehlen physisch — ADR-0006). */
-export interface ReportView {
-  id: string; city_slug: string; anchor_type: string;
-  station_name?: string | null; route_id?: string | null; headsign?: string | null;
-  report_type: string; created_at: string; expires_at: string;
-  status: string; origin: string;
-  trip_id?: string | null; trip_start_date?: string | null;
-}
-
+/**
+ * Störungsmeldungen. Der Vertrag führt diesen Endpunkt als UNBEOBACHTET: die
+ * Fixture erzeugt keine Alerts (die kommen aus dem Echtzeit-Feed). Solange das
+ * so ist, bleibt dieser Typ handgeschrieben — sichtbar als Lücke statt als
+ * scheinbar gesicherter Vertrag.
+ */
 export interface ServiceAlert {
   header?: string | null; description?: string | null; url?: string | null;
   severity?: string | null; route_refs?: string[] | null;

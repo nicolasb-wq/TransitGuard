@@ -1,0 +1,59 @@
+{
+  "from_stop_id": "HHA1",
+  "to_stop_id": "HHA2",
+  "direct_connections": [
+    {
+      "route_id": "R_U1",
+      "direction_id": 1,
+      "headsign": "Kellinghusenstrasse",
+      "ride_seconds": 120,
+      "stops_count": 1,
+      "next_departures": [
+        {
+          "trip_ref": {
+            "trip_id": "T_U1_064",
+            "start_date": "20260821"
+          },
+          "scheduled_time": "2026-08-21T20:00:00+00:00",
+          "realtime": false,
+          "warnings": []
+        },
+        {
+          "trip_ref": {
+            "trip_id": "T_U1_065",
+            "start_date": "20260821"
+          },
+          "scheduled_time": "2026-08-21T20:00:00+00:00",
+          "realtime": false,
+          "warnings": []
+        },
+        {
+          "trip_ref": {
+            "trip_id": "T_U1_066",
+            "start_date": "20260821"
+          },
+          "scheduled_time": "2026-08-21T20:00:00+00:00",
+          "realtime": false,
+          "warnings": []
+        }
+      ]
+    },
+    {
+      "route_id": "R_U1",
+      "direction_id": 1,
+      "headsign": "Ohlsdorf",
+      "ride_seconds": 120,
+      "stops_count": 1,
+      "next_departures": []
+    },
+    {
+      "route_id": "R_U1",
+      "direction_id": 1,
+      "headsign": "Ohlsdorf (Abend)",
+      "ride_seconds": 120,
+      "stops_count": 1,
+      "next_departures": []
+    }
+  ],
+  "transfer_connections": []
+}

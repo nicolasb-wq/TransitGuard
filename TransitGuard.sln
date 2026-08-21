@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TransitGuard.Core.Tests", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TransitGuard.Ingest.Tests", "tests\TransitGuard.Ingest.Tests\TransitGuard.Ingest.Tests.csproj", "{C655E4C0-29BF-40D8-8ADA-028CFB5F912E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TransitGuard.Api.Tests", "tests\TransitGuard.Api.Tests\TransitGuard.Api.Tests.csproj", "{0A36445A-1F11-4581-A97A-57ADA5F59019}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{C655E4C0-29BF-40D8-8ADA-028CFB5F912E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C655E4C0-29BF-40D8-8ADA-028CFB5F912E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C655E4C0-29BF-40D8-8ADA-028CFB5F912E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A36445A-1F11-4581-A97A-57ADA5F59019}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A36445A-1F11-4581-A97A-57ADA5F59019}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A36445A-1F11-4581-A97A-57ADA5F59019}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A36445A-1F11-4581-A97A-57ADA5F59019}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{020C09B9-BECD-4337-95D2-033038BA1AC4} = {A2FDEF7E-94A0-4034-B00C-31E98780E3C8}
@@ -60,5 +66,6 @@ Global
 		{3C8F28E8-53CE-4471-8AB5-3558A0F7DC0A} = {A2FDEF7E-94A0-4034-B00C-31E98780E3C8}
 		{1ADF1F1E-F127-47F2-9644-EBA947B6FDEB} = {44EA83DF-2C45-42DF-B03A-ECCF089B8720}
 		{C655E4C0-29BF-40D8-8ADA-028CFB5F912E} = {44EA83DF-2C45-42DF-B03A-ECCF089B8720}
+		{0A36445A-1F11-4581-A97A-57ADA5F59019} = {44EA83DF-2C45-42DF-B03A-ECCF089B8720}
 	EndGlobalSection
 EndGlobal
