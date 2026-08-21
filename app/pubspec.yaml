@@ -16,6 +16,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Laufzeit-Test der ECHTEN App (E): startet main() in einem echten Browser
+  # und bedient die Oberflaeche gegen eine laufende API.
+  integration_test:
+    sdk: flutter
   flutter_lints: ^4.0.0
 
 flutter:

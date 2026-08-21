@@ -20,6 +20,20 @@ builder.Services.AddControllers().AddJsonOptions(o =>
     o.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower;
     o.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
 });
+// --- CORS: standardmaessig AUS -------------------------------------------
+// Produktion liefert PWA und API unter EINEM Origin aus (deploy/Caddyfile),
+// deshalb braucht es kein CORS — und weniger Angriffsflaeche ist besser.
+// Nur fuer lokale Laufzeittests (Flutter-Web unter eigenem Port) kann eine
+// enge Allowlist gesetzt werden: Cors__AllowedOrigins="http://localhost:1234".
+// Ohne diese Konfiguration wird KEINE CORS-Middleware registriert (T-CORS).
+var corsOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+if (corsOrigins.Length > 0)
+{
+    builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
+        .WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+}
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<SystemClock>(SystemClock.Instance);
 builder.Services.AddSingleton<IClock>(sp => sp.GetRequiredService<SystemClock>());
@@ -111,6 +125,10 @@ if (File.Exists(miniGtfs))   // Dev: Mini-Extrakt; Prod: StaticSyncJob (T2.4) be
     app.Logger.LogInformation("Stadt-Extrakt geladen: {Stops} Stops, {Trips} Trips (Whitelist {N}, Fahrplane {S})",
         extract.StopsInBox, extract.TripsInBox, extract.Whitelist.Count, extract.Schedules.Count);
 }
+
+// CORS zuerst: eine OPTIONS-Vorabfrage traegt keinen Geraete-Token und wuerde
+// von der Auth-Middleware sonst mit 401 abgewiesen, bevor CORS greift.
+if (corsOrigins.Length > 0) app.UseCors();
 
 // Device-Auth-Middleware (X-Device-Token; /v1/devices + /health + billing/activate/restore offen)
 app.Use(async (ctx, next) =>
