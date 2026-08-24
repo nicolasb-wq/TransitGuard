@@ -51,7 +51,7 @@ lokal `scripts/test.sh` → `dotnet publish` → `rsync` nach `/opt/transitguard
 14 Tage volle Nutzung ab Device-Ausstellung (`TrialPolicy`), danach Abo **2,99 €/Monat** (`AccessGate`: trial|subscriber|locked, 402 `trial_expired`). Ticket-First-Gate gilt in ALLEN Stufen. Preis nur als `TrialPolicy.MonthlyPriceEur` ändern.
 
 ## Build-Stand (24.08.2026, 10. Bausession — docs/28-build-log.md)
-**QA-Loop über vierzehn Gates** (`scripts/qa-loop.sh 5`): Build · Backend-Tests · Postgres-Tests · Flutter-Analyze · Flutter-Tests · Web-Build · **Ingest-Fehlerpfade** · **Echtdaten-Ingest** · Acceptance · Vertrag · Caddy-Auslieferung · PWA-Rauchtest · Service Worker · Flutter-Laufzeit.
+**QA-Loop 5/5 grün** (`scripts/qa-loop.sh 5`, Exit 0) über **vierzehn** Gates: Build · Backend-Tests · Postgres-Tests · Flutter-Analyze · Flutter-Tests · Web-Build · **Ingest-Fehlerpfade** · **Echtdaten-Ingest** · Acceptance · Vertrag · Caddy-Auslieferung · PWA-Rauchtest · Service Worker · Flutter-Laufzeit.
 Vier Zustände: grün / durch Fixer behoben / rot / **übersprungen** — eine fehlende Toolchain, Datenbank oder Netzverbindung ist nie ein Beweis. **Der Ingest-Gate braucht Netz zum echten Feed; Nichterreichbarkeit ⇒ übersprungen, nie grün und nie rot.**
 
 **Neu in Session 10 — der Echtdaten-Ingest ist belegt, und dabei fielen sieben echte Fehler an:**

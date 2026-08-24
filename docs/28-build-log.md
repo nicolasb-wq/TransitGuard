@@ -464,6 +464,19 @@ ausgewiesen, und vier Endpunkte haben mehr als eine Beobachtung
 (`journeys.search` 3, `cities.alerts` 2, `stops.departures` 2, `stops.nearby` 2) — genau das
 Gegenmittel gegen die Nullbarkeits-Lücke aus Abschnitt B.
 
+### Ergebnis
+
+**5/5 Durchläufe, 70/70 Gates grün, Skript-Exit 0.**
+09:53:31 · 09:57:13 · 10:00:31 · 10:04:33 · 10:08:57 UTC.
+
+Der Ingest-Gate lief in allen fünf Durchläufen **grün** (nicht übersprungen) — der Feed war
+erreichbar, Postgres lief. Bei fehlendem Netz stünde dort „übersprungen"; das ist keine
+Aussage über die Korrektheit.
+
+**Was fünf Durchläufe NICHT leisten:** Sie liefen in 19 Minuten. Ein zeitabhängiger Fehler
+mit einem Fenster von Stunden — genau wie F.5 — kann darin nicht auffallen. Wiederholung
+ersetzt keine Variation.
+
 ---
 
 ## F — Meine eigenen Fehler in dieser Session
