@@ -1,0 +1,25 @@
+=== Poll-Zyklus ueber PollRealtimeJob — 12 Durchlauf/Durchlaeufe im 60-s-Takt ===
+
+Whitelist geladen: 88,320 Fahrten (C.3.1 Ebene 1, in-memory)
+
+Zyklus  1/12  08:57:38  Status 200    40.0 MB  Alter  28 s  Entities 174,524  Stadt-TUs  4,024  Deltas  4,024  Match 100.0 %  Wand   9335 ms  CPU   6020 ms  Peak-RSS  637.5 MB  RSS  637.5 MB  TripState  4,024
+Zyklus  2/12  08:58:38  Status 200    36.4 MB  Alter  23 s  Entities 174,285  Stadt-TUs  4,013  Deltas    440  Match 100.0 %  Wand   4657 ms  CPU   1270 ms  Peak-RSS  644.0 MB  RSS  644.0 MB  TripState  4,037
+Zyklus  3/12  08:59:38  Status 200    37.5 MB  Alter  22 s  Entities 173,645  Stadt-TUs  3,997  Deltas    642  Match 100.0 %  Wand   3723 ms  CPU   1240 ms  Peak-RSS  632.7 MB  RSS  632.7 MB  TripState  4,046
+Zyklus  4/12  09:00:38  Status 200    36.8 MB  Alter  23 s  Entities 173,710  Stadt-TUs  3,988  Deltas    499  Match 100.0 %  Wand   4488 ms  CPU   1650 ms  Peak-RSS  621.9 MB  RSS  621.9 MB  TripState  4,061
+Zyklus  5/12  09:01:38  Status 200    46.2 MB  Alter  24 s  Entities 173,393  Stadt-TUs  3,961  Deltas    149  Match 100.0 %  Wand   5393 ms  CPU   1580 ms  Peak-RSS  712.5 MB  RSS  712.5 MB  TripState  4,064
+Zyklus  6/12  09:02:38  Status 200    37.6 MB  Alter  22 s  Entities 174,826  Stadt-TUs  3,970  Deltas    666  Match 100.0 %  Wand   3869 ms  CPU   1440 ms  Peak-RSS  718.8 MB  RSS  718.8 MB  TripState  4,095
+Zyklus  7/12  09:03:38  Status 200    37.2 MB  Alter  22 s  Entities 173,815  Stadt-TUs  3,972  Deltas    350  Match 100.0 %  Wand   3637 ms  CPU   1080 ms  Peak-RSS  643.9 MB  RSS  644.0 MB  TripState  4,113
+Zyklus  8/12  09:04:38  Status 200    37.2 MB  Alter  23 s  Entities 175,918  Stadt-TUs  4,017  Deltas    685  Match 100.0 %  Wand   4147 ms  CPU   1410 ms  Peak-RSS  643.8 MB  RSS  643.8 MB  TripState  4,172
+Zyklus  9/12  09:05:38  Status 200    37.3 MB  Alter  23 s  Entities 175,074  Stadt-TUs  3,994  Deltas     45  Match 100.0 %  Wand   4607 ms  CPU   1110 ms  Peak-RSS  651.1 MB  RSS  651.1 MB  TripState  4,172
+Zyklus 10/12  09:06:38  Status 200    37.1 MB  Alter  23 s  Entities 176,622  Stadt-TUs  4,006  Deltas    723  Match 100.0 %  Wand   4211 ms  CPU   1520 ms  Peak-RSS  642.1 MB  RSS  642.1 MB  TripState  4,214
+Zyklus 11/12  09:07:38  Status 200    38.7 MB  Alter  23 s  Entities 176,536  Stadt-TUs  3,994  Deltas    559  Match 100.0 %  Wand   4362 ms  CPU   1350 ms  Peak-RSS  655.9 MB  RSS  655.9 MB  TripState  4,225
+Zyklus 12/12  09:08:38  Status 200    38.0 MB  Alter  24 s  Entities 177,280  Stadt-TUs  4,005  Deltas    546  Match 100.0 %  Wand   5496 ms  CPU   1510 ms  Peak-RSS  657.1 MB  RSS  641.6 MB  TripState  4,255
+
+--- Stabilitaet ueber 12 Zyklen ---
+  RSS Zyklus 1 → 12:   637.5 MB → 641.6 MB   Zuwachs 4.0 MB (0.6 %)
+  Zyklusdauer min/median/max: 3637 / 4488 / 9335 ms
+  Match-Rate min/max:        100.00 % / 100.00 %
+  Stadt-TUs min/max:         3,961 / 4,024
+  Prozess-Peak-RSS gesamt:   657.1 MB
+
+JSON: docs/messungen/a4_zyklen.json

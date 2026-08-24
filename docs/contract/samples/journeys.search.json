@@ -11,8 +11,8 @@
       "next_departures": [
         {
           "trip_ref": {
-            "trip_id": "T_U1_064",
-            "start_date": "20260821"
+            "trip_id": "T_U1_030",
+            "start_date": "20260824"
           },
           "scheduled_time": "2026-08-21T20:00:00+00:00",
           "realtime": false,
@@ -20,8 +20,8 @@
         },
         {
           "trip_ref": {
-            "trip_id": "T_U1_065",
-            "start_date": "20260821"
+            "trip_id": "T_U1_031",
+            "start_date": "20260824"
           },
           "scheduled_time": "2026-08-21T20:00:00+00:00",
           "realtime": false,
@@ -29,8 +29,8 @@
         },
         {
           "trip_ref": {
-            "trip_id": "T_U1_066",
-            "start_date": "20260821"
+            "trip_id": "T_U1_032",
+            "start_date": "20260824"
           },
           "scheduled_time": "2026-08-21T20:00:00+00:00",
           "realtime": false,
@@ -44,7 +44,17 @@
       "headsign": "Ohlsdorf",
       "ride_seconds": 120,
       "stops_count": 1,
-      "next_departures": []
+      "next_departures": [
+        {
+          "trip_ref": {
+            "trip_id": "T_HH_1",
+            "start_date": "20260824"
+          },
+          "scheduled_time": "2026-08-21T20:00:00+00:00",
+          "realtime": false,
+          "warnings": []
+        }
+      ]
     },
     {
       "route_id": "R_U1",
@@ -52,7 +62,17 @@
       "headsign": "Ohlsdorf (Abend)",
       "ride_seconds": 120,
       "stops_count": 1,
-      "next_departures": []
+      "next_departures": [
+        {
+          "trip_ref": {
+            "trip_id": "T_HH_3",
+            "start_date": "20260824"
+          },
+          "scheduled_time": "2026-08-21T20:00:00+00:00",
+          "realtime": false,
+          "warnings": []
+        }
+      ]
     }
   ],
   "transfer_connections": []

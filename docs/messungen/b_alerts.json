@@ -1,0 +1,13 @@
+{
+  "alerts_hamburg_echt_keys": 19,
+  "alerts_gesamt": 96187,
+  "alerts_keys": 521,
+  "alerts_ohne_entity": 0,
+  "alerts_hamburg": 4196,
+  "alerts_hamburg_keys": 29,
+  "alerts_hamburg_trip": 4196,
+  "alerts_hamburg_stop": 0,
+  "befehl": "alerts",
+  "exit": 0,
+  "gemessen_utc": "2026-08-24T09:25:20.9551201\u002B00:00"
+}

@@ -42,12 +42,15 @@ export type Connection =
 export type JourneyResult =
   Omit<V.JourneysSearchResponse, 'direct_connections'> & { direct_connections: Connection[] };
 
-export interface ControlWarning {
-  affected_stop_id: string;
-  affected_stop_sequence: number;
-  user_eta_seconds?: number | null;
-  message: string;
-}
+/**
+ * Kontrollhinweis auf der Fahrt. Seit 24.08.2026 AUS DEM VERTRAG abgeleitet:
+ * `/v1/journeys/{tripId}/warnings` galt bis dahin als unbeobachtet, weil die
+ * Aufzeichnung die Warnungen abfragte, BEVOR eine Meldung an der Fahrt hing —
+ * und dann nochmal mit from_stop_id == Meldungs-Halt, was der Server bewusst
+ * verwirft (idx <= iFrom). Der Server war nie kaputt, die Beobachtung war es.
+ * `report_id` fehlte im handgeschriebenen Typ vollstaendig.
+ */
+export type ControlWarning = V.JourneysWarningsResponse[number];
 
 /**
  * Abfahrt. Basis ist die Form aus der Fahrtensuche; die Echtzeit-Anteile
@@ -70,15 +73,13 @@ export type Departure =
   };
 
 /**
- * Störungsmeldungen. Der Vertrag führt diesen Endpunkt als UNBEOBACHTET: die
- * Fixture erzeugt keine Alerts (die kommen aus dem Echtzeit-Feed). Solange das
- * so ist, bleibt dieser Typ handgeschrieben — sichtbar als Lücke statt als
- * scheinbar gesicherter Vertrag.
+ * Stoerungsmeldungen. Seit 24.08.2026 AUS DEM VERTRAG abgeleitet statt handgeschrieben:
+ * `/v1/cities/{slug}/alerts` lieferte bis dahin immer eine leere Liste, weil der
+ * PollRealtimeJob die normalisierten Alerts zwar baute, aber nirgendwo hinschrieb.
+ * Der handgeschriebene Typ hatte dabei `severity: string` — der Server liefert `number`.
+ * Genau diese Drift kann nur eine echte Beobachtung finden.
  */
-export interface ServiceAlert {
-  header?: string | null; description?: string | null; url?: string | null;
-  severity?: string | null; route_refs?: string[] | null;
-}
+export type ServiceAlert = V.CitiesAlertsResponse[number];
 
 export class ApiError extends Error {
   constructor(public code: string, public status: number, public body: unknown) { super(code); }

@@ -1,0 +1,25 @@
+=== J3 (Hamburg-Anteil) + J6 (Match-Rate Static↔RT) ===
+
+  Static-Mengen laden (trips + stops)    Peak-RSS   355.7 MB  RSS danach   355.8 MB  alloziert   310.1 MB  CPU     1730 ms  Wand    1617 ms
+  Static-Fahrten gesamt 1,788,240, Haltestellen mit Koordinate 695,621
+
+RT-Feed 46,675,301 B @ 2026-08-24T08:42:02.6158877+00:00
+
+  RT parsen + zuordnen                   Peak-RSS   756.7 MB  RSS danach   756.7 MB  alloziert   437.8 MB  CPU     3210 ms  Wand    3139 ms
+
+--- J6: MATCH-RATE Static↔RT ---
+  TripUpdates                79,738
+  im Static aufloesbar       79,738  (100.0 %)
+  je Static-Feed             nv=73,220, rv=6,334, fv=184
+  Stop-Lookup ok / miss      909,765 / 0
+  TUs mit Verspaetungswert   77,912  (97.7 %)
+
+--- J3: HAMBURG-ANTEIL (geografisch ueber STU-Stop-IDs) ---
+  TUs mit ≥1 Stop im KERN    3,566  (4.5 %)
+  TUs mit ≥1 Stop im UMLAND  3,931  (4.9 %)
+  distinct Kern-Trips        3,566, davon mit Delay 3,419 (95.9 %)
+  Kern-Trips je Static-Feed  nv=3,291, rv=231, fv=44
+
+  ⇒ Wuerde StaticSync NUR nv_free laden (aktueller Stand), fehlten 275 von 3,566 Kern-Fahrten (7.7 %).
+
+JSON: docs/messungen/a_j3j6.json

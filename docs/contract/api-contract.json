@@ -1,9 +1,26 @@
 {
   "erzeugtVon": "verifikation/contract_capture.mjs",
+  "grenzen": {
+    "beweisbar": [
+      "Feldnamen und Schreibweise (snake_case) — genau die Drift, die drei Launch-Blocker verursachte",
+      "JSON-Grundtypen der beobachteten Werte",
+      "Pflicht-Header — durch Weglassen belegt, nicht aus Attributen abgeleitet",
+      "Statuscodes der beobachteten Faelle",
+      "ob ein Feld in MINDESTENS EINER Beobachtung fehlte (dann: optional)"
+    ],
+    "nichtBeweisbar": [
+      "Nullbarkeit im Sinne von \"kann NIE null sein\". Beobachtung zeigt immer nur, dass ein Wert in DIESEN Faellen gesetzt war. Ein Feld, das der Server unter einer nie aufgezeichneten Bedingung auf null setzt, steht hier faelschlich als nicht-optional.",
+      "Wertebereiche und fachliche Invarianten (z. B. severity 1..4).",
+      "Verhalten unter Last, Nebenlaeufigkeit, Fehlerfaelle ausserhalb der aufgezeichneten."
+    ],
+    "warumNichtAusServerCode": "Aus C#-Nullable-Annotationen ableiten waere moeglich, aber die Antworten sind ANONYME Typen in den Controllern (new { ... }) — dort gibt es keine Annotation, die man lesen koennte. Genau deshalb liefert Swashbuckle fuer 18/18 Operationen kein Antwortschema (Messung 22.08.2026). Der Weg ist nicht \"noch nicht gemacht\", sondern an dieser Codeform verschlossen.",
+    "verbleibendeFehlerklasse": "Ein Client-Typ nimmt ein Feld als immer-vorhanden an, weil es in allen Aufzeichnungen gesetzt war. Der Server setzt es unter einer seltenen Bedingung auf null. Der Client faellt zur Laufzeit um — genau wie am 21.08.2026 bei route_id. Gegenmittel ist NICHT mehr Ableitung, sondern MEHR Beobachtungen unter verschiedenen Datenlagen; die Zahl steht je Endpunkt unter \"beobachtungen\"."
+  },
   "endpunkte": {
     "billing.activate": {
       "methode": "POST",
       "pfad": "/v1/billing/activate",
+      "beobachtungen": 1,
       "status": 201,
       "felder": {
         "(wurzel)": {
@@ -36,6 +53,7 @@
     "billing.activate.konflikt": {
       "methode": "POST",
       "pfad": "/v1/billing/activate (Beleg erneut)",
+      "beobachtungen": 1,
       "status": 409,
       "felder": {
         "(wurzel)": {
@@ -63,6 +81,7 @@
     "billing.restore": {
       "methode": "POST",
       "pfad": "/v1/billing/restore",
+      "beobachtungen": 1,
       "status": 201,
       "erfordert": {
         "headers": [
@@ -97,6 +116,7 @@
     "billing.validate": {
       "methode": "POST",
       "pfad": "/v1/billing/validate",
+      "beobachtungen": 1,
       "status": 200,
       "felder": {
         "(wurzel)": {
@@ -124,6 +144,7 @@
     "billing.validate.abgelaufen": {
       "methode": "POST",
       "pfad": "/v1/billing/validate (alter Token nach Restore)",
+      "beobachtungen": 1,
       "status": 403,
       "felder": {
         "(wurzel)": {
@@ -151,18 +172,56 @@
     "cities.alerts": {
       "methode": "GET",
       "pfad": "/v1/cities/{slug}/alerts",
-      "unbeobachtet": true,
+      "beobachtungen": 2,
       "felder": {
         "(wurzel)": {
           "typen": [
             "array"
           ]
+        },
+        "[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "[].description": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].header": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].route_refs": {
+          "typen": [
+            "array"
+          ]
+        },
+        "[].route_refs[]": {
+          "typen": [
+            "string"
+          ],
+          "optional": true
+        },
+        "[].severity": {
+          "typen": [
+            "number"
+          ]
+        },
+        "[].url": {
+          "typen": [
+            "string"
+          ],
+          "optional": true
         }
       }
     },
     "cities.events": {
       "methode": "GET",
       "pfad": "/v1/cities/{slug}/events",
+      "beobachtungen": 1,
       "erfordert": {
         "headers": [
           "X-Device-Token",
@@ -212,6 +271,7 @@
     "cities.list": {
       "methode": "GET",
       "pfad": "/v1/cities",
+      "beobachtungen": 1,
       "felder": {
         "(wurzel)": {
           "typen": [
@@ -243,6 +303,7 @@
     "devices.issue": {
       "methode": "POST",
       "pfad": "/v1/devices",
+      "beobachtungen": 1,
       "status": 201,
       "felder": {
         "(wurzel)": {
@@ -265,6 +326,7 @@
     "devices.me": {
       "methode": "GET",
       "pfad": "/v1/devices/me",
+      "beobachtungen": 1,
       "erfordert": {
         "headers": [
           "X-Device-Token"
@@ -317,6 +379,7 @@
     "fehler.validation": {
       "methode": "GET",
       "pfad": "/v1/cities/{slug}/stops/nearby (Fehlerfall)",
+      "beobachtungen": 1,
       "status": 422,
       "felder": {
         "(wurzel)": {
@@ -344,6 +407,7 @@
     "health.live": {
       "methode": "GET",
       "pfad": "/health/live",
+      "beobachtungen": 1,
       "felder": {
         "(wurzel)": {
           "typen": [
@@ -360,6 +424,7 @@
     "health.ready": {
       "methode": "GET",
       "pfad": "/health/ready",
+      "beobachtungen": 1,
       "felder": {
         "(wurzel)": {
           "typen": [
@@ -376,7 +441,8 @@
     "journeys.search": {
       "methode": "POST",
       "pfad": "/v1/journeys/search",
-      "hinweis": "next_departures traegt KEIN route_id/headsign — die stehen auf der Verbindung. Genau diese Asymmetrie war Launch-Blocker 2 (Flutter-TypeError).",
+      "beobachtungen": 3,
+      "hinweis": "next_departures traegt KEIN route_id/headsign — die stehen auf der Verbindung. Genau diese Asymmetrie war Launch-Blocker 2 (Flutter-TypeError). Drei Beobachtungen: Direktstrecke ohne Meldungen, Umstiegsstrecke, Direktstrecke MIT Meldungen.",
       "felder": {
         "(wurzel)": {
           "typen": [
@@ -442,6 +508,32 @@
         "direct_connections[].next_departures[].warnings": {
           "typen": [
             "array"
+          ]
+        },
+        "direct_connections[].next_departures[].warnings[]": {
+          "typen": [
+            "object"
+          ],
+          "optional": true
+        },
+        "direct_connections[].next_departures[].warnings[].affected_stop_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "direct_connections[].next_departures[].warnings[].affected_stop_sequence": {
+          "typen": [
+            "number"
+          ]
+        },
+        "direct_connections[].next_departures[].warnings[].message": {
+          "typen": [
+            "string"
+          ]
+        },
+        "direct_connections[].next_departures[].warnings[].user_eta_seconds": {
+          "typen": [
+            "number"
           ]
         },
         "direct_connections[].ride_seconds": {
@@ -569,7 +661,7 @@
     "journeys.warnings": {
       "methode": "GET",
       "pfad": "/v1/journeys/{tripId}/warnings",
-      "unbeobachtet": true,
+      "beobachtungen": 1,
       "erfordert": {
         "headers": [
           "X-Device-Token",
@@ -588,12 +680,43 @@
           "typen": [
             "array"
           ]
+        },
+        "[]": {
+          "typen": [
+            "object"
+          ]
+        },
+        "[].affected_stop_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].affected_stop_sequence": {
+          "typen": [
+            "number"
+          ]
+        },
+        "[].message": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].report_id": {
+          "typen": [
+            "string"
+          ]
+        },
+        "[].user_eta_seconds": {
+          "typen": [
+            "number"
+          ]
         }
       }
     },
     "reports.create": {
       "methode": "POST",
       "pfad": "/v1/reports",
+      "beobachtungen": 1,
       "status": 201,
       "erfordert": {
         "headers": [
@@ -672,8 +795,10 @@
     "reports.event": {
       "methode": "POST",
       "pfad": "/v1/reports/{id}/events",
-      "unbeobachtet": true,
+      "beobachtungen": 1,
       "status": 204,
+      "ohneKoerper": true,
+      "hinweis": "204 No Content — der Vertrag ist hier vollstaendig, es gibt keinen Koerper.",
       "felder": {
         "(wurzel)": {
           "typen": [
@@ -685,6 +810,7 @@
     "reports.list": {
       "methode": "GET",
       "pfad": "/v1/cities/{slug}/reports",
+      "beobachtungen": 1,
       "hinweis": "route_id/headsign/trip_id nur bei Trip-Anker — bei Stations-Anker fehlen sie (WhenWritingNull). Deshalb optional.",
       "erfordert": {
         "headers": [
@@ -784,6 +910,8 @@
     "stops.departures": {
       "methode": "GET",
       "pfad": "/v1/stops/{stopId}/departures",
+      "beobachtungen": 2,
+      "hinweis": "Zwei Datenlagen: ohne und mit aktiver Meldung an der Fahrt.",
       "felder": {
         "(wurzel)": {
           "typen": [
@@ -840,6 +968,7 @@
     "stops.nearby": {
       "methode": "GET",
       "pfad": "/v1/cities/{slug}/stops/nearby",
+      "beobachtungen": 2,
       "hinweis": "distance_km nur bei lat/lon-Suche — Namenssuche liefert es nicht.",
       "felder": {
         "(wurzel)": {

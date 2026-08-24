@@ -1,0 +1,14 @@
+Postgres: Host=127.0.0.1;Port=5433;Database=transitguard;Username=postgres
+Feed erreichbar: 39842996 Bytes
+ingest_metrics vor dem Start: 4 Zeilen
+Gegenprobe: derselbe Start mit Jobs__Storage=memory darf in der DB NICHTS hinterlassen …
+  Gegenprobe sauber: 0 Auftraege in der DB. Der Nachweis unten ist damit aussagekraeftig.
+API gestartet (PID 30874), Log: /tmp/tmp.QOenPqMVHC/api.log
+API bereit.
+wiederkehrende Auftraege in hangfire.hash: 4
+Loese static-sync ueber das Hangfire-Dashboard aus (251 MB Download) …
+Warte auf einen rt-poll-Durchlauf (Zeitplan: Sekunde 0 jeder Minute) …
+Neue ingest_metrics-Zeilen: 1
+letzte Zeile: status=200 bytes=39836079 entities=177635 tu=80876 alerts=96759 vp=0 stadt_tus=3604 parse_ms=24618 feed_alter=36s
+API-Prozess: Spitzen-RSS 1512 MB, aktuell 1512 MB
+GRUEN: Ingest laeuft unter Hangfire gegen den echten Feed, Persistenz belegt, API stabil.

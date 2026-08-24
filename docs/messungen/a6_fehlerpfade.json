@@ -1,0 +1,44 @@
+{
+  "fehlerpfade": [
+    {
+      "fall": "Server nicht erreichbar",
+      "ok": true,
+      "ausgang": "Ergebnis Success=False NotModified=False Entities=0"
+    },
+    {
+      "fall": "HTTP 500",
+      "ok": true,
+      "ausgang": "Ergebnis Success=False NotModified=False Entities=0"
+    },
+    {
+      "fall": "Antwort abgeschnitten",
+      "ok": true,
+      "ausgang": "Ergebnis Success=False NotModified=False Entities=0"
+    },
+    {
+      "fall": "Body leer (0 Bytes, Status 200)",
+      "ok": true,
+      "ausgang": "Ergebnis Success=False NotModified=False Entities=0"
+    },
+    {
+      "fall": "kaputtes Protobuf",
+      "ok": true,
+      "ausgang": "Ergebnis Success=False NotModified=False Entities=0"
+    },
+    {
+      "fall": "304 Not Modified",
+      "ok": true,
+      "ausgang": "Ergebnis Success=True NotModified=True Entities=0"
+    },
+    {
+      "fall": "gueltiger Feed danach",
+      "ok": true,
+      "ausgang": "Ergebnis Success=True NotModified=False Entities=178997"
+    }
+  ],
+  "metrikzeilen": 7,
+  "alle_ok": true,
+  "befehl": "errors",
+  "exit": 0,
+  "gemessen_utc": "2026-08-24T09:22:52.8712881\u002B00:00"
+}

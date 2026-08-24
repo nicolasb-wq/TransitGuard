@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "affected_stop_id": "HHA3",
+    "affected_stop_sequence": 3,
+    "user_eta_seconds": 1080,
+    "message": "Achtung Kontrolle – halte deine Fahrkarte bereit",
+    "report_id": "00000000-0000-4000-8000-000000000000"
+  }
+]

@@ -36,9 +36,50 @@ mkdir -p "$OUTDIR" "$LOGDIR"
 # erzeugen dabei still falsche Ergebnisse: am 22.08.2026 meldete ein Pass fuenf
 # rote Gates, weil ein verwaister Zweitlauf die API weggeraeumt hatte. Ein
 # Ergebnis, das von einem unbemerkten Nachbarn abhaengt, ist kein Ergebnis.
+#
+# ZWEITER Anlauf dieser Sperre (24.08.2026). Die erste Fassung war
+#   exec 9>"$SPERRE"; flock -n 9
+# und hat sich selbst dauerhaft ausgesperrt: `dotnet build` startet MSBuild-Daemons
+# mit /nodeReuse:true, die den Dateideskriptor 9 ERBEN und den Loop ueberleben.
+# Solange einer dieser Daemons lebt, haelt er die Sperre — und JEDER weitere QA-Lauf
+# bricht mit "laeuft bereits" ab, obwohl kein Loop laeuft. Gemessen: nach dem Ende des
+# Loops hielten drei MSBuild-Prozesse die Sperre.
+#
+# Deshalb entscheidet jetzt die LEBENDIGKEIT, nicht der Dateideskriptor: flock bleibt
+# als schneller, atomarer Weg, aber ein Fehlschlag wird gegen die Prozessliste geprueft.
+# Laeuft nachweislich kein zweiter qa-loop.sh, ist die Sperre verwaist und wird ersetzt.
 SPERRE="${TMPDIR:-/tmp}/transitguard-qa-loop.lock"
-exec 9>"$SPERRE"
-if ! flock -n 9; then
+
+# Und die URSACHE gleich mit abstellen: ohne Knoten-Wiederverwendung ueberleben keine
+# MSBuild-Daemons den Build, also erbt auch keiner den Sperr-Deskriptor. Kostet ein paar
+# Sekunden je Build; ein Loop, der sich selbst aussperrt, kostet mehr.
+export MSBUILDDISABLENODEREUSE=1
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+
+laeuft_zweiter_loop() {
+  local eigen=$$ p
+  for p in $(pgrep -f 'bash .*qa-loop\.sh' 2>/dev/null); do
+    [ "$p" = "$eigen" ] && continue
+    [ "$p" = "$PPID" ] && continue
+    kill -0 "$p" 2>/dev/null && return 0
+  done
+  return 1
+}
+
+sperre_holen() {
+  exec 9>"$SPERRE"
+  flock -n 9 && return 0
+  if laeuft_zweiter_loop; then return 1; fi
+  # Verwaiste Sperre: der Halter ist kein QA-Loop (fast immer ein MSBuild-Daemon mit
+  # geerbtem Deskriptor). Neue Datei = neuer Inode; der Altlasthalter behaelt seine.
+  echo "Hinweis: verwaiste Sperre gefunden (Halter ist kein QA-Loop) — wird ersetzt." >&2
+  exec 9>&-
+  rm -f "$SPERRE"
+  exec 9>"$SPERRE"
+  flock -n 9
+}
+
+if ! sperre_holen; then
   echo "Es laeuft bereits ein QA-Loop (Sperre: $SPERRE). Abbruch." >&2
   exit 2
 fi
@@ -92,12 +133,19 @@ start_caddy() {
   return 0
 }
 
-# gate <name> <fn> → 0 gruen | 1 rot-behoben | 2 rot
+# gate <name> <fn> → 0 gruen | 1 rot-behoben | 2 rot | 3 uebersprungen
+#
+# Exit 3 eines Werkzeugs heisst im ganzen Repo „uebersprungen" (fehlende Toolchain,
+# kein Dienst, kein Netz). Bis zum 24.08.2026 machte diese Funktion daraus ein ROT:
+# jeder nicht-null Exit landete im selben Zweig. Damit haette ein Lauf ohne laufende
+# API den Vertrags-Gate als Fehlschlag gemeldet — und ein rotes Gate, das nur
+# „konnte nicht pruefen" bedeutet, ist genauso irrefuehrend wie ein falsches Gruen.
 gate() {
   local name="$1"; shift
   local out rc
   out=$("$@" 2>&1); rc=$?
   if [ $rc -eq 0 ]; then printf '%s\n' "$out" > "$LOGDIR/$name.log"; return 0; fi
+  if [ $rc -eq 3 ]; then printf '%s\n' "$out" > "$LOGDIR/$name.log"; return 3; fi
   if [ "$FIX" = "yes" ] && [ -x "$ROOT/scripts/qa-fixes.sh" ]; then
     printf '%s\n' "$out" | "$ROOT/scripts/qa-fixes.sh" "$name" >/dev/null 2>&1 || true
     out=$("$@" 2>&1); rc=$?
@@ -164,6 +212,21 @@ g_caddy()       { CADDY="$CADDY_BIN" "$ROOT/scripts/verify-caddy.sh" "$API_URL" 
 g_pwasmoke()    { BASE="http://127.0.0.1:$PWA_PORT" OUT="$LOGDIR/shots" bash -c 'mkdir -p "$OUT"; node '"$ROOT"'/verifikation/pwa_smoke.mjs' 2>&1; }
 g_swoffline()   { BASE="http://127.0.0.1:$PWA_PORT" node "$ROOT/verifikation/sw_offline.mjs" 2>&1; }
 
+# Echtdaten-Ingest von Ende zu Ende: Hangfire + Postgres + echter Feed.
+# Braucht Netz zum echten Feed UND eine Postgres-Instanz. Fehlt eines davon,
+# liefert das Skript selbst Exit 3 — uebersprungen, nicht gruen und nicht rot.
+g_ingest() { TG_E2E_PORT=$((PWA_PORT + 200)) "$ROOT/scripts/verify-ingest-e2e.sh" 2>&1; }
+
+# Fehlerpfade des Poll-Jobs gegen einen lokalen Testserver: unerreichbar,
+# HTTP 500, abgeschnitten, leerer Koerper, kaputtes Protobuf, 304, Erholung.
+# Braucht KEIN Netz zum echten Feed (der eine Abruf darin ist optional).
+g_ingestfehler() {
+  cd "$ROOT" || return 2
+  dotnet build verifikation/IngestProbe/IngestProbe.csproj -c Release --nologo -v q 2>&1 || return 2
+  TG_PROBE_CACHE="${TG_PROBE_CACHE:-${TMPDIR:-/tmp}/tg-probe-qa}" \
+    dotnet verifikation/IngestProbe/bin/Release/net8.0/IngestProbe.dll errors 2>&1
+}
+
 g_flutterweb() {
   cd "$ROOT/app" || return 2
   # IMMER neu bauen: ein alter build/web-Ordner wuerde einen laengst
@@ -193,6 +256,8 @@ for pass in $(seq 1 "$PASSES"); do
   R_FANALYZE=$(run_gate flutteranalyze g_flutteranalyze '[ -x "$FLUTTER_BIN" ]'; echo $?)
   R_FTESTS=$(run_gate fluttertests g_fluttertests '[ -x "$FLUTTER_BIN" ]'; echo $?)
   R_WEB=$(run_gate webbuild g_webbuild; echo $?)
+  R_IFEHLER=$(run_gate ingestfehler g_ingestfehler; echo $?)
+  R_INGEST=$(run_gate ingest g_ingest; echo $?)
 
   if start_api; then
     R_ACC=$(run_gate acceptance g_acceptance; echo $?)
@@ -238,19 +303,22 @@ for pass in $(seq 1 "$PASSES"); do
     echo "| PWA-Rauchtest | $(label "$R_PWA") | echter Browser, hell+dunkel, Umstiege |"
     echo "| Service Worker | $(label "$R_SW") | keine Meldungsdaten im Cache, offline |"
     echo "| Flutter-Laufzeit | $(label "$R_FWEB") | echte App im Browser gegen echte API |"
+    echo "| Ingest-Fehlerpfade | $(label "$R_IFEHLER") | 7 Fehlerfaelle, Job faengt sich, Metrikzeile je Runde |"
+    echo "| Echtdaten-Ingest | $(label "$R_INGEST") | Hangfire+Postgres+echter Feed, Persistenz, API stabil |"
     echo ""
     echo "Vollständige Gate-Ausgaben: \`docs/qa/logs/<gate>.log\` (wird je Pass überschrieben)."
     echo "„Übersprungen\" heißt: Werkzeug oder Dienst fehlt — das ist KEIN Beweis für Korrektheit."
   } > "$OUTDIR/qa-pass-$pass.md"
 
-  printf '{"pass":%d,"utc":"%s","gates":{"build":%d,"backendtests":%d,"pgtests":%d,"flutteranalyze":%d,"fluttertests":%d,"webbuild":%d,"acceptance":%d,"contract":%d,"caddy":%d,"pwasmoke":%d,"swoffline":%d,"flutterweb":%d}}\n' \
+  printf '{"pass":%d,"utc":"%s","gates":{"build":%d,"backendtests":%d,"pgtests":%d,"flutteranalyze":%d,"fluttertests":%d,"webbuild":%d,"acceptance":%d,"contract":%d,"caddy":%d,"pwasmoke":%d,"swoffline":%d,"flutterweb":%d,"ingestfehler":%d,"ingest":%d}}\n' \
     "$pass" "$STAMP" "$R_BUILD" "$R_BETESTS" "$R_PG" "$R_FANALYZE" "$R_FTESTS" "$R_WEB" \
-    "$R_ACC" "$R_CONTRACT" "$R_CADDY" "$R_PWA" "$R_SW" "$R_FWEB" > "$OUTDIR/qa-pass-$pass.json"
+    "$R_ACC" "$R_CONTRACT" "$R_CADDY" "$R_PWA" "$R_SW" "$R_FWEB" "$R_IFEHLER" "$R_INGEST" > "$OUTDIR/qa-pass-$pass.json"
 
   echo "   build=$R_BUILD backend=$R_BETESTS pg=$R_PG flutter=$R_FANALYZE/$R_FTESTS web=$R_WEB" \
-       "acc=$R_ACC vertrag=$R_CONTRACT caddy=$R_CADDY pwa=$R_PWA sw=$R_SW flutterweb=$R_FWEB"
+       "acc=$R_ACC vertrag=$R_CONTRACT caddy=$R_CADDY pwa=$R_PWA sw=$R_SW flutterweb=$R_FWEB" \
+       "ingestfehler=$R_IFEHLER ingest=$R_INGEST"
   for v in "$R_BUILD" "$R_BETESTS" "$R_PG" "$R_FANALYZE" "$R_FTESTS" "$R_WEB" \
-           "$R_ACC" "$R_CONTRACT" "$R_CADDY" "$R_PWA" "$R_SW" "$R_FWEB"; do
+           "$R_ACC" "$R_CONTRACT" "$R_CADDY" "$R_PWA" "$R_SW" "$R_FWEB" "$R_IFEHLER" "$R_INGEST"; do
     [ "$v" = "2" ] && OVERALL=1
   done
 done

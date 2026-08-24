@@ -21,6 +21,7 @@ public static class FeedReader
     public static FeedMeta ReadMeta(byte[] body)
     {
         var msg = FeedMessage.Parser.ParseFrom(body);
+        if (msg.Header is null) throw new InvalidDataException("Feed-Antwort ohne FeedHeader.");
         return new FeedMeta((long)msg.Header.Timestamp, msg.Header.GtfsRealtimeVersion);
     }
 
@@ -28,7 +29,13 @@ public static class FeedReader
     public static (long Entities, long TripUpdates, long Alerts, long VehiclePositions, DateTimeOffset FeedTimeUtc)
         ForEachEntity(byte[] body, Action<TripUpdateNormalizer.RawTripUpdate> onTrip, Action<RawAlert> onAlert, Action<DateTimeOffset> onFeedTimeUtc)
     {
+        if (body.Length == 0)
+            throw new InvalidDataException("Feed-Antwort war leer (0 Bytes) — das ist kein GTFS-RT.");
         var msg = FeedMessage.Parser.ParseFrom(body);
+        // Google.Protobuf parst 0 Bytes und auch manche Truemmer klaglos zu einer FeedMessage
+        // OHNE Header. Der Zugriff auf msg.Header lief dann ins Leere (T-POLL-ERR-1).
+        if (msg.Header is null)
+            throw new InvalidDataException($"Feed-Antwort ohne FeedHeader ({body.Length} Bytes) — kein GTFS-RT.");
         long entities = 0, tu = 0, al = 0, vp = 0;
         var feedTime = msg.Header.Timestamp > 0
             ? DateTimeOffset.FromUnixTimeSeconds((long)msg.Header.Timestamp)

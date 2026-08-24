@@ -1,0 +1,27 @@
+=== Static-GTFS → Hamburg-Extrakt (C.3.1-Whitelist) ===
+
+[nv] Download https://download.gtfs.de/germany/nv_free/latest.zip …
+  [nv] Download → Datei                  Peak-RSS    58.9 MB  RSS danach    58.9 MB  alloziert     5.5 MB  CPU     1790 ms  Wand    9576 ms
+[nv] ZIP 251.3 MB (263,555,358 B) — /tmp/claude-0/-home-user-TransitGuard/d02cd56e-38de-5506-9a1a-7cabb0acb56b/scratchpad/tg-probe/static_nv.zip
+  [nv] CityExtractor (Hamburg-bbox)      Peak-RSS   431.8 MB  RSS danach   431.8 MB  alloziert 80309.7 MB  CPU    83440 ms  Wand   83240 ms
+[nv] Stops in bbox 15,019, Trips in bbox 78,518, Whitelist 78,518, Fahrplaene 78,518
+  [nv] alle trips/stops fuer J3/J6       Peak-RSS   432.2 MB  RSS danach   432.2 MB  alloziert  1699.6 MB  CPU     2460 ms  Wand    2407 ms
+[rv] Download https://download.gtfs.de/germany/rv_free/latest.zip …
+  [rv] Download → Datei                  Peak-RSS   423.8 MB  RSS danach   423.8 MB  alloziert     3.2 MB  CPU      100 ms  Wand    1830 ms
+[rv] ZIP 11.3 MB (11,831,389 B) — /tmp/claude-0/-home-user-TransitGuard/d02cd56e-38de-5506-9a1a-7cabb0acb56b/scratchpad/tg-probe/static_rv.zip
+  [rv] CityExtractor (Hamburg-bbox)      Peak-RSS   423.6 MB  RSS danach   227.7 MB  alloziert  3322.3 MB  CPU     3370 ms  Wand    3335 ms
+[rv] Stops in bbox 237, Trips in bbox 8,658, Whitelist 8,658, Fahrplaene 8,658
+  [rv] alle trips/stops fuer J3/J6       Peak-RSS   225.7 MB  RSS danach   225.7 MB  alloziert    75.2 MB  CPU      100 ms  Wand      81 ms
+[fv] Download https://download.gtfs.de/germany/fv_free/latest.zip …
+  [fv] Download → Datei                  Peak-RSS   219.5 MB  RSS danach   219.5 MB  alloziert     0.1 MB  CPU       20 ms  Wand     576 ms
+[fv] ZIP 0.4 MB (415,106 B) — /tmp/claude-0/-home-user-TransitGuard/d02cd56e-38de-5506-9a1a-7cabb0acb56b/scratchpad/tg-probe/static_fv.zip
+  [fv] CityExtractor (Hamburg-bbox)      Peak-RSS   219.5 MB  RSS danach   219.5 MB  alloziert   115.7 MB  CPU      120 ms  Wand     115 ms
+[fv] Stops in bbox 10, Trips in bbox 1,144, Whitelist 1,144, Fahrplaene 1,144
+  [fv] alle trips/stops fuer J3/J6       Peak-RSS   220.9 MB  RSS danach   220.9 MB  alloziert     4.2 MB  CPU       10 ms  Wand       5 ms
+
+Whitelist gesamt (nv+rv+fv): 88,320 Fahrten
+Whitelist zwischengespeichert: /tmp/claude-0/-home-user-TransitGuard/d02cd56e-38de-5506-9a1a-7cabb0acb56b/scratchpad/tg-probe/whitelist_hamburg.json (3.4 MB)
+
+Prozess-Peak-RSS gesamt: 237.2 MB
+
+JSON: docs/messungen/a_static.json

@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Klartext-HTTP zu lokalen Adressen NUR im Debug-Build (siehe res/xml/…).
+         Der Manifest-Merger uebernimmt dieses Attribut in die Debug-Variante;
+         der Release-Build bleibt unberuehrt. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
 </manifest>

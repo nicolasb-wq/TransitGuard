@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NUR fuer Debug-Builds (src/debug/). Android blockiert seit API 28 Klartext-HTTP
+  vollstaendig; ohne diese Datei scheitert JEDER Geraetetest gegen eine lokale
+  Entwickler-API mit einem Verbindungsfehler — auch ueber `adb reverse`, weil die
+  Sperre fuer 127.0.0.1 genauso gilt.
+
+  Der Release-Build bekommt diese Datei NICHT (sie liegt bewusst nicht in src/main/).
+  Abgesichert durch T-ANDROID-1 in app/test/android_konfiguration_test.dart.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>      <!-- Emulator → Host -->
+        <domain includeSubdomains="true">192.168.0.0</domain>
+        <domain includeSubdomains="true">192.168.1.0</domain>
+    </domain-config>
+</network-security-config>

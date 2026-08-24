@@ -78,6 +78,9 @@ hochfahren() {
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='tg_billing_login') THEN
         CREATE ROLE tg_billing_login LOGIN PASSWORD 'dev-only'; GRANT tg_billing TO tg_billing_login;
       END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='tg_ingest_login') THEN
+        CREATE ROLE tg_ingest_login LOGIN PASSWORD 'dev-only'; GRANT tg_ingest TO tg_ingest_login;
+      END IF;
     END \$\$;" >/dev/null
   echo "  ✔ PostgreSQL $(pg psql -h 127.0.0.1 -p "$PGPORT" -U postgres -tAc 'SHOW server_version') "\
 "mit PostGIS $(pg psql -h 127.0.0.1 -p "$PGPORT" -U postgres -d "$DBNAME" -tAc 'SELECT postgis_lib_version()') auf Port $PGPORT"

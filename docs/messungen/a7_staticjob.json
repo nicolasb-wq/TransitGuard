@@ -1,0 +1,9 @@
+{
+  "job_peak_rss_kb": 704200,
+  "datei_peak_rss_kb": 752028,
+  "mehrbedarf_kb": -47828,
+  "whitelist": 78518,
+  "befehl": "staticjob",
+  "exit": 0,
+  "gemessen_utc": "2026-08-24T08:50:01.1865510\u002B00:00"
+}

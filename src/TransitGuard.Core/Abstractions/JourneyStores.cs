@@ -18,7 +18,9 @@ public interface IStopStore
 
 public interface IAlertStore
 {
-    void Upsert(NormalizedAlert alert, DateTimeOffset seenAt);
+    /// <summary>cityId ist Pflicht: ohne ihn landeten die Alerts ganz Deutschlands in jeder Stadt.
+    /// Gemessen 24.08.2026: 96.663 Alerts im Feed, 530 verschiedene — 29 betreffen Hamburg.</summary>
+    void Upsert(string cityId, NormalizedAlert alert, DateTimeOffset seenAt);
     IReadOnlyList<NormalizedAlert> Visible(string cityId, DateTimeOffset now, int maxAgeHours = 6);
 }
 

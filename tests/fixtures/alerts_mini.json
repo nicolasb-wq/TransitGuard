@@ -1,0 +1,9 @@
+{
+  "_hinweis": "Dev-Startdaten fuer /v1/cities/{slug}/alerts. Die Texte sind ECHTE Meldungen aus dem gtfs.de-Feed vom 24.08.2026 (siehe docs/messungen/b_alerts.txt) — nur die trip_ids sind auf die Mini-Fixture umgestellt, damit sie zum Stadt-Extrakt passen. Wird NUR geladen, wenn Ingest aus UND Data:Provider != postgres ist; in Produktion befuellt der PollRealtimeJob denselben Speicher.",
+  "alerts": [
+    { "header": "Reparatur an einem Signal", "description": "Reparatur an einem Signal", "severity": 4, "cause": 9, "effect": 6, "trip_ids": ["T_HH_1"], "url": null },
+    { "header": "Bauarbeiten", "description": "Bauarbeiten", "severity": 3, "cause": 3, "effect": 6, "trip_ids": ["T_HH_1", "T_HH_2"], "url": "https://www.hvv.de/de/stoerungen" },
+    { "header": "Verspätung eines vorausfahrenden Zuges", "description": "Verspätung eines vorausfahrenden Zuges", "severity": 3, "cause": 6, "effect": 6, "trip_ids": ["T_HH_2"], "url": null },
+    { "header": "Bordrestaurant", "description": "Bordrestaurant", "severity": 2, "cause": 1, "effect": 8, "trip_ids": ["T_HH_1"], "url": null }
+  ]
+}

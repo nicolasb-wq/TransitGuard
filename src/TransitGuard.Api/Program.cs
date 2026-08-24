@@ -1,6 +1,7 @@
 using IngestJobs = TransitGuard.Ingest.Jobs;
 using Hangfire;
 using Hangfire.MemoryStorage;   // NuGet: UseMemoryStorage-Erweiterung
+using Hangfire.PostgreSql;      // NuGet: UsePostgreSqlStorage (Prod-Auftragsspeicher)
 using TransitGuard.Api.Hubs;
 using TransitGuard.Api.Services;
 using TransitGuard.Core.Abstractions;
@@ -50,8 +51,14 @@ builder.Services.AddSingleton<IStopStore, InMemoryStopStore>();
 builder.Services.AddSingleton<IAlertStore, InMemoryAlertStore>();
 builder.Services.AddSingleton<IDeviceRegistry, InMemoryDeviceRegistry>();
 builder.Services.AddSingleton(new TransitGuard.Core.Entitlement.TrialPolicy(trialDays: 14));
-builder.Services.AddSingleton<AccessGate>();
-builder.Services.AddSingleton<EntitlementContext>();
+// Scoped, NICHT Singleton: beide ziehen IDeviceRegistry bzw. IEntitlementStore, die im
+// Postgres-Modus EF-Dienste mit Lebensdauer Scoped sind. Als Singleton haetten sie je
+// EINEN DbContext fuer den ganzen Prozess festgehalten und ihn ueber alle gleichzeitigen
+// Anfragen geteilt — DbContext ist nicht threadsicher. Der Fehler zeigt sich nicht beim
+// Start, sondern unter Last (T-DI-SCOPE, gefunden 24.08.2026).
+// Beide Klassen sind zustandslos; Scoped kostet nur eine Objekterzeugung je Anfrage.
+builder.Services.AddScoped<AccessGate>();
+builder.Services.AddScoped<EntitlementContext>();
 builder.Services.AddSingleton<TicketGate>();
 builder.Services.AddSingleton<TtlEngine>();
 builder.Services.AddSingleton<AlertNormalizer>(AlertNormalizer.CreateDefault());
@@ -76,6 +83,10 @@ builder.Services.AddScoped<IngestJobs.StaticSyncJob>();
 builder.Services.AddScoped<TtlSweepService>();   // Auflösung je Job-Ausführung (Hangfire-Scope)
 builder.Services.AddScoped<PollRealtimeJob>();
 builder.Services.AddHttpClient<FeedFetcher>(c => c.Timeout = TimeSpan.FromSeconds(30));   // docs/07 §2
+// ETag-Speicher MUSS Singleton sein: PollRealtimeJob ist Scoped, Hangfire oeffnet je
+// Ausfuehrung einen eigenen Scope. Lag der ETag im Instanzfeld, wurde er nie wiederverwendet
+// und der If-None-Match-Zweig war toter Code (gemessen 24.08.2026, T-ETAG-1).
+builder.Services.AddSingleton<FeedEtagStore>();
 builder.Services.AddSignalR(o => o.MaximumReceiveMessageSize = 64 * 1024);
 builder.Services.AddSingleton<IRealtimeDispatcher, SignalRRealtimeDispatcher>();
 
@@ -106,8 +117,45 @@ else
     builder.Services.AddSingleton<TransitGuard.Api.Services.ITrustStore>(sp => sp.GetRequiredService<InMemoryStores>());
 }
 
-builder.Services.AddHangfire(h => h.UseMemoryStorage(new Hangfire.MemoryStorage.MemoryStorageOptions()));   // Prod: Postgres-Storage (M6)
-builder.Services.AddHangfireServer();
+// --- Hangfire-Auftragsspeicher --------------------------------------------
+// MemoryStorage verliert bei jedem Neustart Zeitplan, Auftraege und Sperren. Ein Deploy
+// (Symlink-Swap + Restart) mitten im StaticSync haette den Auftrag stumm verschluckt.
+// Prod nutzt deshalb Postgres (docs/sql/0006_hangfire.sql, Schema "hangfire", Rolle tg_ingest).
+// Schalter: Jobs:Storage = postgres|memory. Vorgabe folgt Data:Provider, damit der
+// Produktionsmodus nicht versehentlich mit In-Memory-Auftraegen laeuft.
+var jobStorage = builder.Configuration["Jobs:Storage"] ?? (provider == "postgres" ? "postgres" : "memory");
+if (jobStorage == "postgres")
+{
+    // Eigene, schmale Verbindung: Hangfire gehoert zu den Ingest-Jobs, nicht zur API-Rolle.
+    // Fehlt DATABASE__INGEST, faellt es auf die App-Verbindung zurueck — mit Hinweis im Log,
+    // damit der Rueckfall in Prod auffaellt statt still zu bleiben.
+    var ingestCs = builder.Configuration["DATABASE:INGEST"] ?? builder.Configuration.GetConnectionString("Ingest")
+        ?? builder.Configuration["DATABASE:APP"] ?? builder.Configuration.GetConnectionString("App")
+        ?? throw new InvalidOperationException("Jobs:Storage=postgres, aber weder DATABASE__INGEST noch DATABASE__APP gesetzt");
+    builder.Services.AddHangfire(h => h
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(ingestCs), new Hangfire.PostgreSql.PostgreSqlStorageOptions
+        {
+            SchemaName = "hangfire",
+            PrepareSchemaIfNecessary = true,          // Tabellen legt Hangfire selbst an (Migration schafft nur das Schema)
+            QueuePollInterval = TimeSpan.FromSeconds(5),
+            InvisibilityTimeout = TimeSpan.FromMinutes(10),
+            DistributedLockTimeout = TimeSpan.FromMinutes(2),
+        }));
+}
+else
+{
+    builder.Services.AddHangfire(h => h.UseMemoryStorage(new Hangfire.MemoryStorage.MemoryStorageOptions()));
+}
+builder.Services.AddHangfireServer(o =>
+{
+    // Ein Worker: die Jahresarbeit ist ein 40-MB-Feed alle 60 s, kein paralleler Durchsatz.
+    // Mehr Worker wuerden nur den Speicher vervielfachen (Parse-Peak, docs/28 A.2).
+    o.WorkerCount = 1;
+    o.ServerName = $"transitguard-{Environment.MachineName}";
+});
 
 var app = builder.Build();
 
@@ -124,6 +172,39 @@ if (File.Exists(miniGtfs))   // Dev: Mini-Extrakt; Prod: StaticSyncJob (T2.4) be
     app.Services.GetRequiredService<IStopStore>().ReplaceCity("hamburg", (IReadOnlyList<TransitGuard.Core.Journeys.StopInfo>)extract.Stops);
     app.Logger.LogInformation("Stadt-Extrakt geladen: {Stops} Stops, {Trips} Trips (Whitelist {N}, Fahrplane {S})",
         extract.StopsInBox, extract.TripsInBox, extract.Whitelist.Count, extract.Schedules.Count);
+}
+
+// Dev-Startdaten fuer Stoerungsmeldungen. STRENG bewacht: nur wenn Ingest AUS und der
+// Speicher-Modus aktiv ist. In Produktion befuellt der PollRealtimeJob denselben Store aus
+// dem echten Feed — dort waeren feste Meldungen aktiv schaedlich (Nutzer saehen Stoerungen,
+// die es nicht gibt). Ohne diese Startdaten liefert /v1/cities/{slug}/alerts im Lokal-Modus
+// immer eine leere Liste, und genau deshalb stand der Endpunkt im Vertrag als
+// „unbeobachtet" — eine Luecke, die keinen Feldnamen kannte.
+if (provider != "postgres" && !builder.Configuration.GetValue<bool>("Ingest:Enabled"))
+{
+    var alertFixture = Path.Combine(AppContext.BaseDirectory, "fixtures", "alerts_mini.json");
+    if (File.Exists(alertFixture))
+    {
+        var store = app.Services.GetRequiredService<IAlertStore>();
+        var norm = app.Services.GetRequiredService<AlertNormalizer>();
+        var zaehler = new NormalizerCounters();
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(alertFixture));
+        var cityId = CityRegistry.All["hamburg"].CityId;
+        int n = 0;
+        foreach (var a in doc.RootElement.GetProperty("alerts").EnumerateArray())
+        {
+            var trips = a.GetProperty("trip_ids").EnumerateArray().Select(x => x.GetString()!).ToArray();
+            var norml = norm.Normalize(
+                a.GetProperty("header").GetString() ?? "", a.GetProperty("description").GetString() ?? "",
+                a.GetProperty("url").ValueKind == System.Text.Json.JsonValueKind.Null ? null : a.GetProperty("url").GetString(),
+                a.GetProperty("cause").GetInt32(), a.GetProperty("effect").GetInt32(), a.GetProperty("severity").GetInt32(),
+                trips, Array.Empty<string>(), zaehler);
+            store.Upsert(cityId, norml, DateTimeOffset.UtcNow);
+            n++;
+        }
+        app.Logger.LogInformation("Dev-Stoerungsmeldungen geladen: {N} ({Rauschen} davon Rauschen, werden nicht ausgeliefert)",
+            n, zaehler.AlertsNoise);
+    }
 }
 
 // CORS zuerst: eine OPTIONS-Vorabfrage traegt keinen Geraete-Token und wuerde

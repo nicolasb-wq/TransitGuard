@@ -23,10 +23,15 @@ public sealed class PostgresSchemaTests
         using var r = cmd.ExecuteReader();
         var namen = new List<string>();
         while (r.Read()) namen.Add(r.GetString(0));
-        Assert.Equal(
-            new[] { "0001_core.sql", "0002_gtfs.sql", "0003_rls.sql",
-                    "0004_partitions_retention.sql", "0005_report_last_known_station.sql" },
-            namen);
+        // Erwartung aus dem VERZEICHNIS, nicht aus einer Liste im Test. Die fruehere
+        // Fassung zaehlte die Dateien auf und wurde am 24.08.2026 mit 0006_hangfire.sql
+        // rot — nicht weil etwas kaputt war, sondern weil die Liste veraltete. Ein Test,
+        // der bei jeder korrekten Migration gepflegt werden muss, wird irgendwann
+        // gedankenlos nachgezogen; dann prueft er nichts mehr.
+        var erwartet = Directory.GetFiles(Path.Combine(ApiFixtureHelfer.RepoWurzel(), "docs", "sql"), "*.sql")
+            .Select(Path.GetFileName).OrderBy(x => x, StringComparer.Ordinal).ToArray();
+        Assert.NotEmpty(erwartet);
+        Assert.Equal(erwartet, namen);
     }
 
     [SkippableFact]

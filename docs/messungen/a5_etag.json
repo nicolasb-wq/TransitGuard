@@ -1,0 +1,10 @@
+{
+  "304_unterstuetzt": true,
+  "gegenprobe_falscher_etag_liefert_200": true,
+  "treffer_304": 37,
+  "inhaltswechsel": 3,
+  "wechsel_abstand_s": 28.8337947,
+  "befehl": "etag",
+  "exit": 0,
+  "gemessen_utc": "2026-08-24T08:39:33.9405048\u002B00:00"
+}

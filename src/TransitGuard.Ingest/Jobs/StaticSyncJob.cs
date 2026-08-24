@@ -38,17 +38,34 @@ public sealed class StaticSyncJob(
     IAlarmSink alarms,
     ILogger<StaticSyncJob>? logger = null)
 {
+    /// <summary>Zielverzeichnis der Zwischendatei; ueberschreibbar fuer Tests.</summary>
+    public string ZwischenspeicherVerzeichnis { get; init; } = Path.GetTempPath();
+
     public async Task<SyncResult> RunAsync(HttpClient http, string zipUrl, string cityId, Core.Geo.GeoBoundingBox bbox, CancellationToken ct = default)
     {
         long bytes;
-        await using (var ms = new MemoryStream())
+        // Das ZIP geht auf die PLATTE, nicht in den Arbeitsspeicher.
+        // Gemessen am echten nv_free-Archiv (251 MB) am 24.08.2026:
+        //   ueber MemoryStream  687 MB Spitzen-RSS
+        //   ueber Zwischendatei 418 MB Spitzen-RSS   ⇒ 269 MB gespart, praktisch die ZIP-Groesse.
+        // Auf einer kleinen VM ist das der Unterschied zwischen "laeuft" und OOM-Kill.
+        var temp = Path.Combine(ZwischenspeicherVerzeichnis,
+            $"tg-static-{cityId}-{Guid.NewGuid():N}.zip");
+        try
         {
-            using var resp = await http.GetAsync(zipUrl, HttpCompletionOption.ResponseHeadersRead, ct);
-            if (!resp.IsSuccessStatusCode) { alarms.Critical("static-sync", $"Download {zipUrl} → {(int)resp.StatusCode}"); return new SyncResult(false, 0, 0, 0); }
-            await resp.Content.CopyToAsync(ms, ct);
-            bytes = ms.Length; ms.Position = 0;
+            using (var resp = await http.GetAsync(zipUrl, HttpCompletionOption.ResponseHeadersRead, ct))
+            {
+                if (!resp.IsSuccessStatusCode) { alarms.Critical("static-sync", $"Download {zipUrl} → {(int)resp.StatusCode}"); return new SyncResult(false, 0, 0, 0); }
+                await using var quelle = await resp.Content.ReadAsStreamAsync(ct);
+                await using var ziel = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                    bufferSize: 1 << 20, useAsync: true);
+                await quelle.CopyToAsync(ziel, 1 << 20, ct);
+                bytes = ziel.Length;
+            }
 
-            var extract = CityExtractor.Extract(new GtfsStaticArchive(ms), bbox);
+            await using var datei = new FileStream(temp, FileMode.Open, FileAccess.Read, FileShare.Read,
+                bufferSize: 1 << 20, useAsync: false);
+            var extract = CityExtractor.Extract(new GtfsStaticArchive(datei), bbox);
             if (extract.Whitelist.Count == 0) { alarms.Critical("static-sync", "Extrakt leer — Abbruch, alter Stand bleibt aktiv"); return new SyncResult(false, bytes, 0, 0); }
 
             // „Atomarer" Swap der Prozess-Stores (alte Daten bleiben bei Exception bis hierher stehen)
@@ -59,6 +76,14 @@ public sealed class StaticSyncJob(
             logger?.LogInformation("StaticSync {City}: {MB:F1} MB ZIP → {Stops} Stops, {Trips} Trips, Whitelist {N}",
                 cityId, bytes / 1048576.0, extract.StopsInBox, extract.TripsInBox, extract.Whitelist.Count);
             return new SyncResult(true, bytes, extract.StopsInBox, extract.TripsInBox);
+        }
+        finally
+        {
+            // Die Zwischendatei MUSS auch bei Abbruch verschwinden — sonst fuellt ein
+            // wiederholt fehlschlagender Sync zweimal die Woche die Platte mit 251-MB-Leichen.
+            try { if (File.Exists(temp)) File.Delete(temp); }
+            catch (IOException ex) { logger?.LogWarning(ex, "Zwischendatei {Datei} nicht loeschbar", temp); }
+            catch (UnauthorizedAccessException ex) { logger?.LogWarning(ex, "Zwischendatei {Datei} nicht loeschbar", temp); }
         }
     }
 

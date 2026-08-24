@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>TransitGuard.Verifikation.IngestProbe</RootNamespace>
+    <AssemblyName>IngestProbe</AssemblyName>
+    <!-- Server-GC aus: die Messung soll den Speicherbedarf zeigen, nicht die Heap-Reserve
+         eines Server-GC mit 4 Heaps. Prod-Empfehlung steht im Bericht. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/TransitGuard.Ingest/TransitGuard.Ingest.csproj" />
+  </ItemGroup>
+</Project>

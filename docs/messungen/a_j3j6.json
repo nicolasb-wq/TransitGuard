@@ -1,0 +1,18 @@
+{
+  "j6_tu": 79738,
+  "j6_aufloesbar": 79738,
+  "j6_match_rate": 1,
+  "j6_stop_lookup_miss": 0,
+  "j3_kern": 3566,
+  "j3_umland": 3931,
+  "j3_kern_mit_delay": 3419,
+  "j3_kern_je_feed": {
+    "nv": 3291,
+    "rv": 231,
+    "fv": 44
+  },
+  "j3_nur_nv_fehlend": 275,
+  "befehl": "j3j6",
+  "exit": 0,
+  "gemessen_utc": "2026-08-24T08:42:06.1062443\u002B00:00"
+}

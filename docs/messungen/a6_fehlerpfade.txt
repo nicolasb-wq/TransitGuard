@@ -1,0 +1,18 @@
+=== A.6: Fehlerpfade — der Poll-Job darf die API nie mitreissen ===
+
+Whitelist: 88,320 Fahrten 
+
+  OK   Server nicht erreichbar            erwartet: Success=false, keine Ausnahme              Ergebnis Success=False NotModified=False Entities=0
+  OK   HTTP 500                           erwartet: Success=false, keine Ausnahme              Ergebnis Success=False NotModified=False Entities=0
+  OK   Antwort abgeschnitten              erwartet: Success=false, keine Ausnahme              Ergebnis Success=False NotModified=False Entities=0
+  OK   Body leer (0 Bytes, Status 200)    erwartet: kein Absturz                               Ergebnis Success=False NotModified=False Entities=0
+  OK   kaputtes Protobuf                  erwartet: kein Absturz (Success egal)                Ergebnis Success=False NotModified=False Entities=0
+  OK   304 Not Modified                   erwartet: Success=true, NotModified=true             Ergebnis Success=True NotModified=True Entities=0
+  OK   gueltiger Feed danach              erwartet: Success=true (Erholung nach Fehlern)       Ergebnis Success=True NotModified=False Entities=178997
+
+  Anfragen am Testserver: 6
+  FeedHealthTracker.ConsecutiveFailures nach der Serie: 0
+  Metrikzeilen geschrieben: 7 (jede Runde muss eine Zeile hinterlassen)
+    davon mit Error-Feld: 5
+
+JSON: docs/messungen/a6_fehlerpfade.json

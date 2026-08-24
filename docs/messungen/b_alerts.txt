@@ -1,0 +1,55 @@
+=== B: Alerts — Zuordnung zu Hamburg ===
+
+Whitelist 88,320 Fahrten, 15,222 Halte in der Stadt-Box
+
+Alerts gesamt                     96,663   (530 verschiedene Dedup-Keys)
+  ohne InformedEntity             0  (0.0 %)  ⇒ nicht zuordenbar
+  mit trip_id                     96,535  (99.9 %)
+  mit stop_id                     128  (0.1 %)
+  Hamburg ueber trip_id           4,213  (4.4 %)
+  Hamburg ueber stop_id           0  (0.0 %)
+  Hamburg gesamt (trip ODER stop) 4,213  ⇒ 27 verschiedene Meldungen
+
+  ⇒ Ein NUR trip-basierter Filter verlöre -4,213 Treffer, wenn stop-basiert mehr findet.
+
+Beispiele (verschiedene Dedup-Keys):
+  [sev 2]  | trips 1, stops 0
+      Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von DELFI
+  [sev 2]  | trips 1, stops 0
+      Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von Verkehrsverbund Bremen & Nieders…
+  [sev 2] Komfort Check-in verfügbar - wenn möglich bitte einchecken | trips 1, stops 0
+      Komfort Check-in verfügbar - wenn möglich bitte einchecken
+  [sev 2] Fahrradmitnahme reservierungspflichtig | trips 1, stops 0
+      Fahrradmitnahme reservierungspflichtig
+  [sev 2] Fahrradmitnahme begrenzt möglich | trips 1, stops 0
+      Fahrradmitnahme begrenzt möglich
+  [sev 2] Fahrzeuggebundene Einstiegshilfe vorhanden | trips 1, stops 0
+      Fahrzeuggebundene Einstiegshilfe vorhanden
+  [sev 2] Bordrestaurant | trips 1, stops 0
+      Bordrestaurant
+  [sev 2]  | trips 1, stops 0
+      Echtzeitdaten aufbereitet von GTFS.de, bereitgestellt von Nahverkehrsgesellschaft Baden-Wü…
+
+JSON: docs/messungen/b_alerts.json
+      Fahrradmitnahme begrenzt möglich
+  [sev 2] Fahrzeuggebundene Einstiegshilfe vorhanden | trips 1, stops 0
+      Fahrzeuggebundene Einstiegshilfe vorhanden
+  [sev 2] Bordrestaurant | trips 1, stops 0
+      Bordrestaurant
+  [sev 4] Reparatur an einem Signal | trips 1, stops 0
+      Reparatur an einem Signal
+
+--- Nach den Noise-Regeln (AlertNormalizer.CreateDefault, wie in der API) ---
+  Hamburg-Meldungen ohne Rauschen: 19 von 29
+    [sev 4] Reparatur an einem Signal | Reparatur an einem Signal
+    [sev 3] Verspätete Bereitstellung des Zuges | Verspätete Bereitstellung des Zuges
+    [sev 3] Verspätung eines vorausfahrenden Zuges | Verspätung eines vorausfahrenden Zuges
+    [sev 3] Bauarbeiten | Bauarbeiten
+    [sev 3] Zug verkehrt mit verminderter Geschwindigkeit | Zug verkehrt mit verminderter Geschwindigkeit
+    [sev 2] Einstieg mit Rollstuhl stufenfrei | Einstieg mit Rollstuhl stufenfrei
+    [sev 2]  | Universaltoilette fehlt
+    [sev 4] Reparatur an einer Weiche | Reparatur an einer Weiche
+    [sev 2] ICE Sprinter | ICE Sprinter
+    [sev 3] Technischer Defekt an einem anderen Zug | Technischer Defekt an einem anderen Zug
+
+JSON: docs/messungen/b_alerts.json

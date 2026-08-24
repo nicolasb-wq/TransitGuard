@@ -20,14 +20,16 @@ public sealed class PollRealtimeJob(
     AlertNormalizer alertNormalizer,
     ITripWhitelistProvider whitelistProvider,
     IClock clock,
+    FeedEtagStore etags,
+    IAlertStore alertStore,
     ILogger<PollRealtimeJob>? logger = null)
 {
-    private string? _etag;
-
     public async Task<PollResult> RunAsync(string feedUrl, string cityId, CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        var result = await fetcher.FetchAsync(feedUrl, _etag, ct).ConfigureAwait(false);
+        // ETag aus dem prozessweiten Speicher — NICHT aus einem Instanzfeld: der Job ist Scoped,
+        // jede Hangfire-Ausfuehrung bekaeme sonst eine frische Instanz ohne ETag (T-ETAG-1).
+        var result = await fetcher.FetchAsync(feedUrl, etags.Get(feedUrl), ct).ConfigureAwait(false);
         if (result.NotModified)
         {
             metrics.Write(new IngestMetricRow { Ts = clock.UtcNow, Feed = feedUrl, HttpStatus = 304, EtagHit = true, ParseMs = (int)result.ElapsedMs });
@@ -39,15 +41,49 @@ public sealed class PollRealtimeJob(
             metrics.Write(new IngestMetricRow { Ts = clock.UtcNow, Feed = feedUrl, HttpStatus = result.StatusCode, Error = result.Error ?? "no_body", ParseMs = (int)result.ElapsedMs });
             return PollResult.FailedResult;
         }
-        _etag = result.ETag;
-
         var counters = new NormalizerCounters();
         var tuByTrip = new Dictionary<string, NormalizedTripUpdate>(4096);
         var alerts = new List<NormalizedAlert>(256);
         var feedTime = DateTimeOffset.MinValue;
 
-        var (entities, tuCount, alertCount, vpCount, feedTimeUtc) = FeedReader.ForEachEntity(
-            result.Body,
+        // Der Parse liegt in einem eigenen Schutz: ein leerer Body (Status 200, 0 Bytes) und
+        // ein verstuemmeltes Protobuf sind Betriebsalltag, keine Ausnahmefaelle. Ohne diesen
+        // Block flog eine NullReferenceException bzw. InvalidProtocolBufferException aus dem
+        // Job heraus — ohne Metrikzeile, ohne Fehlerzaehler, also ohne Circuit-Breaker.
+        // Der Ausfall waere nur im Hangfire-Dashboard sichtbar gewesen (T-POLL-ERR-1/-2).
+        long entities, tuCount, alertCount, vpCount;
+        try
+        {
+            (entities, tuCount, alertCount, vpCount, _) = ParseFeed(result.Body);
+        }
+        catch (Exception ex) when (ex is Google.Protobuf.InvalidProtocolBufferException
+                                      or NullReferenceException or IndexOutOfRangeException
+                                      or ArgumentException or InvalidOperationException or InvalidDataException)
+        {
+            healthTracker.RecordRun(DateOnly.FromDateTime(clock.UtcNow.UtcDateTime), 0, failed: true);
+            metrics.Write(new IngestMetricRow
+            {
+                Ts = clock.UtcNow, Feed = feedUrl, HttpStatus = result.StatusCode, Bytes = result.Body.Length,
+                Error = $"parse_fehler: {ex.GetType().Name}: {ex.Message}", ParseMs = (int)sw.ElapsedMilliseconds
+            });
+            logger?.LogError(ex, "Poll {City}: Feed nicht lesbar ({Bytes} Bytes)", cityId, result.Body.Length);
+            // Der gemerkte ETag wird bewusst NICHT gesetzt: sonst wuerde der naechste Lauf
+            // denselben kaputten Inhalt per 304 als "unveraendert" abhaken.
+            return PollResult.FailedResult;
+        }
+
+        // ETag erst jetzt merken — nach erfolgreichem Parse. Sonst wuerde ein einmal
+        // verstuemmelter Feed per 304 dauerhaft als "unveraendert" abgehakt.
+        etags.Set(feedUrl, result.ETag);
+
+        var now = clock.UtcNow;
+        var day = DateOnly.FromDateTime(now.UtcDateTime);
+        var age = feedTime > DateTimeOffset.MinValue ? (int)(now - feedTime).TotalSeconds : (int?)null;
+        healthTracker.RecordRun(day, entities, failed: false);
+        var health = new FeedHealthEvaluator().Evaluate(age, entities, healthTracker.WeekdayMean(day), healthTracker.ConsecutiveFailures);
+
+        (long, long, long, long, DateTimeOffset) ParseFeed(byte[] body) => FeedReader.ForEachEntity(
+            body,
             raw =>
             {
                 if (string.IsNullOrEmpty(raw.TripId)) return;
@@ -62,6 +98,27 @@ public sealed class PollRealtimeJob(
             },
             t => feedTime = t);
 
+        // Alerts in den Stadt-Store. Bis zum 24.08.2026 wurde diese Liste zwar gefuellt,
+        // aber NIRGENDWO hingeschrieben: /v1/cities/{slug}/alerts war dauerhaft leer,
+        // egal wieviele Stoerungsmeldungen im Feed standen (T-ALERT-1).
+        //
+        // Gefiltert wird ueber die Stadt-Whitelist der informierten Fahrten. Messung
+        // 24.08.2026: 99,9 % der Alerts tragen eine trip_id, 0,1 % eine stop_id, und
+        // KEIN Hamburg-Treffer kam ueber stop_id, den die trip_id nicht auch gefunden
+        // haette. Ein trip-basierter Filter ist damit vollstaendig, nicht nur bequem.
+        var stadtWhitelist = whitelistProvider.GetWhitelist(cityId);
+        int alertsGespeichert = 0;
+        foreach (var a in alerts)
+        {
+            if (a.IsNoise) continue;                                   // Rauschen gar nicht erst ablegen
+            bool gehoertZurStadt = false;
+            foreach (var t in a.InformedTripIds)
+                if (stadtWhitelist.ContainsKey(t)) { gehoertZurStadt = true; break; }
+            if (!gehoertZurStadt) continue;
+            alertStore.Upsert(cityId, a, feedTime > DateTimeOffset.MinValue ? feedTime : now);
+            alertsGespeichert++;
+        }
+
         // Delta: nur Änderungen weiterreichen (docs/07 §2 Nr. 4)
         int changed = 0;
         foreach (var kv in tuByTrip)
@@ -75,12 +132,6 @@ public sealed class PollRealtimeJob(
             }
         }
 
-        var now = clock.UtcNow;
-        var day = DateOnly.FromDateTime(now.UtcDateTime);
-        var age = feedTime > DateTimeOffset.MinValue ? (int)(now - feedTime).TotalSeconds : (int?)null;
-        healthTracker.RecordRun(day, entities, failed: false);
-        var health = new FeedHealthEvaluator().Evaluate(age, entities, healthTracker.WeekdayMean(day), healthTracker.ConsecutiveFailures);
-
         double matchRate = counters.TripUpdatesSeen > 0
             ? (counters.TripUpdatesSeen - counters.RouteMisses) / (double)counters.TripUpdatesSeen : 0;
         metrics.Write(new IngestMetricRow
@@ -92,8 +143,8 @@ public sealed class PollRealtimeJob(
             Error = health.IsHealthy ? null : health.ToString()
         });
 
-        logger?.LogInformation("Poll {City}: {Entities} Entities, {Matched} Stadt-TUs, {Changed} Deltas, Health {Health}",
-            cityId, entities, tuByTrip.Count, changed, health);
+        logger?.LogInformation("Poll {City}: {Entities} Entities, {Matched} Stadt-TUs, {Changed} Deltas, {Alerts} Stadt-Alerts, Health {Health}",
+            cityId, entities, tuByTrip.Count, changed, alertsGespeichert, health);
         return PollResult.Ok(entities, tuByTrip.Count, changed, health.IsHealthy);
     }
 

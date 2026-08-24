@@ -50,7 +50,13 @@ export type BillingValidateAbgelaufenResponse = {
 };
 
 /** GET /v1/cities/{slug}/alerts */
-export type CitiesAlertsResponse = unknown[];
+export type CitiesAlertsResponse = Array<{
+  description: string;
+  header: string;
+  route_refs: Array<string>;
+  severity: number;
+  url?: string;
+}>;
 
 /** GET /v1/cities/{slug}/events */
 export type CitiesEventsResponse = Array<{
@@ -102,7 +108,7 @@ export type HealthReadyResponse = {
 };
 
 /** POST /v1/journeys/search
-  * next_departures traegt KEIN route_id/headsign — die stehen auf der Verbindung. Genau diese Asymmetrie war Launch-Blocker 2 (Flutter-TypeError). */
+  * next_departures traegt KEIN route_id/headsign — die stehen auf der Verbindung. Genau diese Asymmetrie war Launch-Blocker 2 (Flutter-TypeError). Drei Beobachtungen: Direktstrecke ohne Meldungen, Umstiegsstrecke, Direktstrecke MIT Meldungen. */
 export type JourneysSearchResponse = {
   direct_connections: Array<{
     direction_id: number;
@@ -114,7 +120,12 @@ export type JourneysSearchResponse = {
         start_date: string;
         trip_id: string;
       };
-      warnings: unknown[];
+      warnings: Array<{
+        affected_stop_id: string;
+        affected_stop_sequence: number;
+        message: string;
+        user_eta_seconds: number;
+      }>;
     }>;
     ride_seconds: number;
     route_id: string;
@@ -146,7 +157,13 @@ export type JourneysSearchResponse = {
 };
 
 /** GET /v1/journeys/{tripId}/warnings */
-export type JourneysWarningsResponse = unknown[];
+export type JourneysWarningsResponse = Array<{
+  affected_stop_id: string;
+  affected_stop_sequence: number;
+  message: string;
+  report_id: string;
+  user_eta_seconds: number;
+}>;
 
 /** POST /v1/reports */
 export type ReportsCreateResponse = {
@@ -161,7 +178,8 @@ export type ReportsCreateResponse = {
   status: string;
 };
 
-/** POST /v1/reports/{id}/events */
+/** POST /v1/reports/{id}/events
+  * 204 No Content — der Vertrag ist hier vollstaendig, es gibt keinen Koerper. */
 export type ReportsEventResponse = null;
 
 /** GET /v1/cities/{slug}/reports
@@ -182,7 +200,8 @@ export type ReportsListResponse = Array<{
   trip_start_date?: string;
 }>;
 
-/** GET /v1/stops/{stopId}/departures */
+/** GET /v1/stops/{stopId}/departures
+  * Zwei Datenlagen: ohne und mit aktiver Meldung an der Fahrt. */
 export type StopsDeparturesResponse = Array<{
   headsign: string;
   realtime: boolean;

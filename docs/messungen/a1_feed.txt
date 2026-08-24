@@ -1,0 +1,39 @@
+=== A: Ein Abruf des echten RT-Feeds ===
+
+HEAD https://realtime.gtfs.de/realtime-free.pb
+  Status          200
+  Content-Length  44,076,902 Bytes
+  ETag            "2a08f66-659c6e3660e1c"
+  Last-Modified   2026-08-24T08:36:53.0000000+00:00
+  Cache-Control   (nicht gesetzt)
+
+GET  Status 200, 44,076,902 Bytes, 4411 ms bis Header
+  Abruf (Download)                       Peak-RSS   144.0 MB  RSS danach   144.0 MB  alloziert    84.9 MB  CPU     1030 ms  Wand    4413 ms
+
+FeedHeader.timestamp  2026-08-24T08:36:50.0000000+00:00  ⇒ Feed-Alter bei Abruf 25 s
+GTFS-RT-Version       2.0
+
+Entities gesamt       174,321
+  TripUpdates         79,723
+  Alerts              94,598
+  VehiclePositions    0
+
+TripUpdates im Detail
+  mit Verspaetungswert     77,899  (97.7 %)
+  route_id im Feed gesetzt 0  (0.0 %)
+  trip_id leer             0
+  vehicle-Feld vorhanden   6,391  (8.0 %)
+    davon leere id         6,391
+  StopTimeUpdates gesamt   832,278   Median je TU 5
+  Delay Median 0 s, p05 0 s, p95 240 s, min -20882 s, max 10800 s
+  Delay ausserhalb Clamp [-120,+7200]: 871
+
+Alerts: 94,598 gesamt, 513 verschiedene Dedup-Keys ⇒ 99.5 % Duplikate
+
+Speicher/CPU je Phase:
+  Abruf (Download)                       Peak-RSS   144.0 MB  RSS danach   144.0 MB  alloziert    84.9 MB  CPU     1030 ms  Wand    4413 ms
+  Parse + Zaehlung (alle Entities)       Peak-RSS   610.5 MB  RSS danach   610.5 MB  alloziert   470.5 MB  CPU     4000 ms  Wand    3884 ms
+
+  Prozess-Peak-RSS gesamt: 640.6 MB   (RSS jetzt 640.6 MB)
+
+JSON: docs/messungen/a1_feed.json

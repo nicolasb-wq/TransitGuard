@@ -59,6 +59,8 @@ public static class JobRegistration
 /// <summary>Invoker-Klassen halten die Jobs von DI-Auflösungsproblemen in Hangfile-Serialisierungsdelegaten fern.</summary>
 public sealed class TtlSweepInvoker(TtlSweepService sweep, ILogger<TtlSweepInvoker>? logger = null)
 {
+    [DisableConcurrentExecution(timeoutInSeconds: 5)]
+    [AutomaticRetry(Attempts = 0, OnAttemptsExceeded = AttemptsExceededAction.Delete)]
     public Task Run(bool feedHealthy) => Task.Run(() =>
     {
         var n = sweep.Sweep(feedHealthy);
@@ -68,6 +70,14 @@ public sealed class TtlSweepInvoker(TtlSweepService sweep, ILogger<TtlSweepInvok
 
 public sealed class PollRealtimeInvoker(PollRealtimeJob poll, FeedHealthProvider health, ILogger<PollRealtimeInvoker>? logger = null)
 {
+    // Nicht ueberlappend: dauert ein Zyklus laenger als 60 s (grosser Feed, langsames Netz),
+    // darf der naechste NICHT parallel starten — zwei gleichzeitige Parsevorgaenge verdoppeln
+    // den Speicherbedarf (gemessen: ~610 MB Parse-Peak je Lauf, docs/28 A.2).
+    // Timeout 5 s statt Warten: der uebersprungene Lauf ist billiger als ein Rueckstau.
+    // AutomaticRetry(0): ein verpasster Poll wird von der naechsten Minute erledigt,
+    // ein Wiederholungsversuch wuerde nur veraltete Daten nachziehen.
+    [DisableConcurrentExecution(timeoutInSeconds: 5)]
+    [AutomaticRetry(Attempts = 0, OnAttemptsExceeded = AttemptsExceededAction.Delete)]
     public Task Run(string feedUrl, string cityId) => poll.RunAsync(feedUrl, cityId).ContinueWith(r =>
     {
         if (r.IsFaulted) logger?.LogError(r.Exception, "RT-Poll fehlgeschlagen");
@@ -77,6 +87,10 @@ public sealed class PollRealtimeInvoker(PollRealtimeJob poll, FeedHealthProvider
 
 public sealed class StaticSyncInvoker(TransitGuard.Ingest.Jobs.StaticSyncJob job, IHttpClientFactory httpFactory, Microsoft.Extensions.Configuration.IConfiguration cfg)
 {
+    // 251 MB ZIP + zwei Durchlaeufe ueber stop_times: ein zweiter gleichzeitiger Lauf
+    // wuerde den Speicher sprengen (gemessen 432 MB Spitze je Lauf, docs/28 A.7).
+    [DisableConcurrentExecution(timeoutInSeconds: 30)]
+    [AutomaticRetry(Attempts = 1)]
     public Task Run() => job.RunAsync(httpFactory.CreateClient(),
         cfg["Ingest:StaticZipUrl"] ?? "https://download.gtfs.de/germany/nv_free/latest.zip",
         cfg["Ingest:City"] ?? "hamburg",
@@ -85,6 +99,7 @@ public sealed class StaticSyncInvoker(TransitGuard.Ingest.Jobs.StaticSyncJob job
 
 public sealed class PartitionMaintInvoker(AppDbContextProxy db, ILogger<PartitionMaintInvoker>? logger = null)
 {
+    [DisableConcurrentExecution(timeoutInSeconds: 30)]
     public Task Run() => db.MaintainPartitionsAsync().ContinueWith(r =>
         logger?.LogInformation("PartitionMaint: {Msg}", r.IsFaulted ? r.Exception!.Message : "ok (ensure/drop ausgeführt)"));
 }

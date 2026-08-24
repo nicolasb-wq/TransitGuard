@@ -9,7 +9,7 @@
       "wait_seconds": 240,
       "leg_a": {
         "route_id": "R_U1",
-        "headsign": "Kellinghusenstrasse",
+        "headsign": "Ohlsdorf",
         "board_stop": "HHA1",
         "alight_stop": "HHA3",
         "board_at": "2026-08-21T20:00:00+00:00",

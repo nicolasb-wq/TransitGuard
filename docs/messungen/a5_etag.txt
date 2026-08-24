@@ -1,0 +1,16 @@
+=== J1: If-None-Match funktional + Regenerationstakt ===
+
+1. Abruf ohne ETag : Status 200, 37,871,511 Bytes, ETag "241df97-659c6e6e1931d"
+2. Abruf mit ETag  : Status 304, NotModified=True, Body 0 Bytes
+3. Abruf mit FALSCHEM ETag (Gegenprobe): Status 200, NotModified=False, Body 37,871,511 Bytes
+
+Regenerationstakt (bis zu 90 s, Abfrage alle 2 s):
+      28 s: neuer Inhalt (38,294,733 B), Abstand zum vorigen Wechsel 28.0 s
+      58 s: neuer Inhalt (40,286,432 B), Abstand zum vorigen Wechsel 29.8 s
+      86 s: neuer Inhalt (38,726,822 B), Abstand zum vorigen Wechsel 27.9 s
+
+  304-Antworten: 37, Inhaltswechsel: 3
+  Mittlerer Abstand zwischen Wechseln: 28.8 s
+  ⇒ Bei 60-s-Poll ist ein 304 praktisch ausgeschlossen.
+
+JSON: docs/messungen/a5_etag.json

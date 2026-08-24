@@ -53,8 +53,22 @@ public sealed class TransferConnectionTests : IClassFixture<ApiFixture>
         Assert.False(a.TryGetProperty("RouteId", out _), "PascalCase darf im Vertrag nicht vorkommen.");
         Assert.False(b.TryGetProperty("RouteId", out _), "PascalCase darf im Vertrag nicht vorkommen.");
 
-        Assert.Equal("Kellinghusenstrasse", a.GetProperty("headsign").GetString());
-        Assert.Equal("Farmsen", b.GetProperty("headsign").GetString());
+        // Fruehere Fassung verglich feste Zeichenketten ("Kellinghusenstrasse"/"Farmsen").
+        // Das war ZEITABHAENGIG und nur durch Glueck gruen: die Fixture enthaelt neben den
+        // 72 Taktfahrten (Ziel "Kellinghusenstrasse") auch die Altfahrten T_HH_1/T_HH_3 auf
+        // derselben Linie mit Ziel "Ohlsdorf". Welche davon die naechste ist, haengt an der
+        // Uhrzeit des Testlaufs — am 24.08.2026 um 10:0x fiel der Test deshalb um, ohne dass
+        // sich am Code etwas geaendert hatte. Fuenf QA-Durchlaeufe hintereinander liefen
+        // innerhalb weniger Minuten und konnten das nicht finden.
+        // Geprueft wird jetzt die EIGENSCHAFT statt des Zufallswerts: jede Teilstrecke traegt
+        // ein Ziel, und es ist eines der Ziele IHRER Linie.
+        var zielA = a.GetProperty("headsign").GetString();
+        var zielB = b.GetProperty("headsign").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(zielA), "leg_a ohne headsign");
+        Assert.False(string.IsNullOrWhiteSpace(zielB), "leg_b ohne headsign");
+        Assert.Contains(zielA, new[] { "Kellinghusenstrasse", "Ohlsdorf", "Ohlsdorf (Abend)" });   // R_U1
+        Assert.Equal("Farmsen", zielB);                                                            // R_U2 hat nur dieses Ziel
+        Assert.NotEqual(zielA, zielB);
     }
 
     [Fact]

@@ -23,11 +23,19 @@ public sealed class InMemoryStopStore : IStopStore
 
 public sealed class InMemoryAlertStore : IAlertStore
 {
+    // Schluessel ist stadt|dedupKey. Vorher war es nur der dedupKey und Visible() ignorierte
+    // die Stadt vollstaendig — jede Stadt haette die Meldungen jeder anderen gesehen (T-ALERT-2).
     private readonly ConcurrentDictionary<string, (NormalizedAlert Alert, DateTimeOffset SeenAt)> _byKey = new(StringComparer.Ordinal);
-    public void Upsert(NormalizedAlert alert, DateTimeOffset seenAt) => _byKey[alert.DedupKey] = (alert, seenAt);
-    public IReadOnlyList<NormalizedAlert> Visible(string cityId, DateTimeOffset now, int maxAgeHours = 6) =>
-        _byKey.Values.Where(kv => !kv.Alert.IsNoise && now - kv.SeenAt <= TimeSpan.FromHours(maxAgeHours))
-            .Select(kv => kv.Alert).ToList();
+    public void Upsert(string cityId, NormalizedAlert alert, DateTimeOffset seenAt) =>
+        _byKey[cityId + "|" + alert.DedupKey] = (alert, seenAt);
+    public IReadOnlyList<NormalizedAlert> Visible(string cityId, DateTimeOffset now, int maxAgeHours = 6)
+    {
+        var praefix = cityId + "|";
+        return _byKey.Where(kv => kv.Key.StartsWith(praefix, StringComparison.Ordinal)
+                               && !kv.Value.Alert.IsNoise
+                               && now - kv.Value.SeenAt <= TimeSpan.FromHours(maxAgeHours))
+            .Select(kv => kv.Value.Alert).ToList();
+    }
 }
 
 public sealed class InMemoryDeviceRegistry : IDeviceRegistry

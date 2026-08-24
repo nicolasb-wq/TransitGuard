@@ -105,7 +105,38 @@ async function ruf(methode, pfad, { headers = {}, body, erwartet } = {}) {
 const uuid = () => crypto.randomUUID();
 
 // --- Szenarien -------------------------------------------------------------
-const vertrag = { erzeugtVon: 'verifikation/contract_capture.mjs', endpunkte: {} };
+const vertrag = {
+  erzeugtVon: 'verifikation/contract_capture.mjs',
+  // Was dieser Vertrag beweisen kann — und was nicht. Bewusst IM Artefakt, nicht nur
+  // in der Doku: wer die Datei liest, soll ihre Grenze sehen, ohne sie zu suchen.
+  grenzen: {
+    beweisbar: [
+      'Feldnamen und Schreibweise (snake_case) — genau die Drift, die drei Launch-Blocker verursachte',
+      'JSON-Grundtypen der beobachteten Werte',
+      'Pflicht-Header — durch Weglassen belegt, nicht aus Attributen abgeleitet',
+      'Statuscodes der beobachteten Faelle',
+      'ob ein Feld in MINDESTENS EINER Beobachtung fehlte (dann: optional)',
+    ],
+    nichtBeweisbar: [
+      'Nullbarkeit im Sinne von "kann NIE null sein". Beobachtung zeigt immer nur, dass '
+      + 'ein Wert in DIESEN Faellen gesetzt war. Ein Feld, das der Server unter einer nie '
+      + 'aufgezeichneten Bedingung auf null setzt, steht hier faelschlich als nicht-optional.',
+      'Wertebereiche und fachliche Invarianten (z. B. severity 1..4).',
+      'Verhalten unter Last, Nebenlaeufigkeit, Fehlerfaelle ausserhalb der aufgezeichneten.',
+    ],
+    warumNichtAusServerCode: 'Aus C#-Nullable-Annotationen ableiten waere moeglich, aber die '
+      + 'Antworten sind ANONYME Typen in den Controllern (new { ... }) — dort gibt es keine '
+      + 'Annotation, die man lesen koennte. Genau deshalb liefert Swashbuckle fuer 18/18 '
+      + 'Operationen kein Antwortschema (Messung 22.08.2026). Der Weg ist nicht "noch nicht '
+      + 'gemacht", sondern an dieser Codeform verschlossen.',
+    verbleibendeFehlerklasse: 'Ein Client-Typ nimmt ein Feld als immer-vorhanden an, weil es '
+      + 'in allen Aufzeichnungen gesetzt war. Der Server setzt es unter einer seltenen '
+      + 'Bedingung auf null. Der Client faellt zur Laufzeit um — genau wie am 21.08.2026 bei '
+      + 'route_id. Gegenmittel ist NICHT mehr Ableitung, sondern MEHR Beobachtungen unter '
+      + 'verschiedenen Datenlagen; die Zahl steht je Endpunkt unter "beobachtungen".',
+  },
+  endpunkte: {},
+};
 const beispiele = {};
 
 function erfasse(schluessel, methode, pfad, beobachtungen, extra = {}) {
@@ -114,9 +145,14 @@ function erfasse(schluessel, methode, pfad, beobachtungen, extra = {}) {
   // ausgewiesen statt stillschweigend als "keine Felder" verbucht — sonst
   // entstuenden aus einer Luecke scheinbar gueltige Client-Typen.
   const nurWurzel = Object.keys(felder).filter(k => k !== '(wurzel)').length === 0;
-  const unbeobachtet = nurWurzel && (felder['(wurzel)']?.typen ?? []).some(t => t === 'array' || t === 'null');
+  // "ohneKoerper" heisst: die Antwort HAT per Entwurf keinen Koerper (204). Das ist
+  // Vollstaendigkeit, keine Luecke — sonst stuende ein fertiger Endpunkt fuer immer
+  // als offene Baustelle im Vertrag.
+  const unbeobachtet = !extra.ohneKoerper
+    && nurWurzel && (felder['(wurzel)']?.typen ?? []).some(t => t === 'array' || t === 'null');
   vertrag.endpunkte[schluessel] = {
     methode, pfad,
+    beobachtungen: beobachtungen.length,
     ...(unbeobachtet ? { unbeobachtet: true } : {}),
     ...extra,
     felder,
@@ -160,8 +196,9 @@ async function main() {
   });
 
   const stopId = nahGeo[0].stop_id;
-  const abf = (await ruf('GET', `/v1/stops/${stopId}/departures?limit=5`, { headers: H, erwartet: 200 })).json;
-  erfasse('stops.departures', 'GET', '/v1/stops/{stopId}/departures', [abf]);
+  // Beobachtung 1 von 2: OHNE aktive Meldungen. Die zweite folgt weiter unten, nachdem
+  // Meldungen angelegt wurden — dann tragen die Abfahrten ein gefuelltes warnings[].
+  const abfOhne = (await ruf('GET', `/v1/stops/${stopId}/departures?limit=5`, { headers: H, erwartet: 200 })).json;
 
   // ZWEI Beobachtungen: eine Direktstrecke und eine, die einen Umstieg erzwingt.
   // Ohne die zweite bliebe transfer_connections leer und die Umstiegsform
@@ -170,27 +207,22 @@ async function main() {
   const direkt = (await ruf('POST', '/v1/journeys/search', { headers: H, body: { from_stop_id: stopId, to_stop_id: ziel }, erwartet: 200 })).json;
   const mitUmstieg = (await ruf('POST', '/v1/journeys/search', { headers: H, body: { from_stop_id: 'HHA1', to_stop_id: 'HHA5' }, erwartet: 200 })).json;
   const fahrt = direkt;
-  erfasse('journeys.search', 'POST', '/v1/journeys/search', [direkt, mitUmstieg], {
-    hinweis: 'next_departures traegt KEIN route_id/headsign — die stehen auf der Verbindung. '
-           + 'Genau diese Asymmetrie war Launch-Blocker 2 (Flutter-TypeError).',
-  });
+  // journeys.search wird ebenfalls ZWEIMAL beobachtet — die zweite Aufzeichnung folgt
+  // unten, nach dem Anlegen der Meldungen.
 
-  const eineFahrt = fahrt.direct_connections.flatMap(c => c.next_departures)[0];
-  if (eineFahrt) {
-    const wPfad = `/v1/journeys/${eineFahrt.trip_ref.trip_id}/warnings`
-      + `?start_date=${eineFahrt.trip_ref.start_date}&from_stop_id=${stopId}`;
-    // Auch dieser Endpunkt liegt hinter dem Ticket-Gate (bei der Aufzeichnung
-    // am 21.08.2026 aufgefallen — er stand in keiner Doku als Gate-Endpunkt).
-    const wOhne = await ruf('GET', wPfad, { headers: H });
-    const w = (await ruf('GET', wPfad, { headers: HT, erwartet: 200 })).json;
-    erfasse('journeys.warnings', 'GET', '/v1/journeys/{tripId}/warnings', [w], {
-      erfordert: { headers: ['X-Device-Token', 'X-Ticket-Confirmed'] },
-      belegtDurch: [{ ohne: 'X-Ticket-Confirmed', status: wOhne.status, code: wOhne.json?.error?.code }],
-    });
-  }
+  // journeys.warnings wird WEITER UNTEN aufgezeichnet — erst muss eine Meldung an der
+  // Fahrt haengen, sonst ist die Antwort leer und die Elementform bleibt unbeobachtet.
+  // Bis zum 24.08.2026 stand die Aufzeichnung hier oben und lieferte deshalb immer [].
 
-  erfasse('cities.alerts', 'GET', '/v1/cities/{slug}/alerts',
-    [(await ruf('GET', '/v1/cities/hamburg/alerts', { headers: H, erwartet: 200 })).json]);
+  // Stoerungsmeldungen: im Lokal-Modus aus tests/fixtures/alerts_mini.json vorbefuellt
+  // (Program.cs, nur wenn Ingest aus). In Produktion befuellt der PollRealtimeJob
+  // denselben Speicher aus dem echten Feed.
+  // ZWEI Beobachtungen: einmal frei, einmal mit Ticket-Bestaetigung. Verschiedene
+  // Datenlagen sind das einzige Mittel gegen die Nullbarkeits-Luecke (siehe "grenzen").
+  erfasse('cities.alerts', 'GET', '/v1/cities/{slug}/alerts', [
+    (await ruf('GET', '/v1/cities/hamburg/alerts', { headers: H, erwartet: 200 })).json,
+    (await ruf('GET', '/v1/cities/hamburg/alerts', { headers: HT, erwartet: 200 })).json,
+  ]);
 
   // --- Meldungen: Pflicht-Header werden BEWIESEN, nicht behauptet ---
   const meldung = {
@@ -231,7 +263,63 @@ async function main() {
         },
       },
     });
+
+    // JETZT die Warnungen. Zwei Dinge muessen dafuer stimmen, sonst bleibt die Antwort leer:
+    //   1. eine AKTIVE Meldung an genau dieser Fahrt, und
+    //   2. sie muss VOR dem Nutzer liegen — JourneyService verwirft alles mit
+    //      idx <= iFrom („hinter dem Nutzer oder am Einstieg: kein Vorwarn-Fall").
+    // Bis zum 24.08.2026 wurde mit from_stop_id == Meldungs-Halt aufgezeichnet; damit war
+    // idx == iFrom und die Liste IMMER leer. Der Endpunkt galt als „unbeobachtet", obwohl
+    // er funktionierte — die Luecke lag in der Aufzeichnung, nicht im Server.
+    const fahrtHHA = (await ruf('POST', '/v1/journeys/search',
+      { headers: H, body: { from_stop_id: 'HHA1', to_stop_id: 'HHA3' }, erwartet: 200 })).json;
+    const abfahrtHHA = fahrtHHA.direct_connections.flatMap(c => c.next_departures)[0];
+    if (abfahrtHHA) {
+      await ruf('POST', '/v1/reports', {
+        headers: { ...HT, 'Idempotency-Key': uuid() },
+        body: {
+          ...meldung, anchor_type: 'trip', report_type: 'in_vehicle',
+          station: { stop_id: 'HHA3' },            // spaeterer Halt als der Einstieg HHA1
+          trip: {
+            trip_id: abfahrtHHA.trip_ref.trip_id, start_date: abfahrtHHA.trip_ref.start_date,
+            route_id: abfahrtHHA.route_id, headsign: abfahrtHHA.headsign,
+          },
+        },
+      });
+    }
+    const wTrip = abfahrtHHA ? abfahrtHHA.trip_ref : naechste.trip_ref;
+    const wVon = abfahrtHHA ? 'HHA1' : stopId;
+    const wPfad = `/v1/journeys/${wTrip.trip_id}/warnings`
+      + `?start_date=${wTrip.start_date}&from_stop_id=${wVon}`;
+    // Auch dieser Endpunkt liegt hinter dem Ticket-Gate (bei der Aufzeichnung
+    // am 21.08.2026 aufgefallen — er stand in keiner Doku als Gate-Endpunkt).
+    const wOhne = await ruf('GET', wPfad, { headers: H });
+    const w = (await ruf('GET', wPfad, { headers: HT, erwartet: 200 })).json;
+    erfasse('journeys.warnings', 'GET', '/v1/journeys/{tripId}/warnings', [w], {
+      erfordert: { headers: ['X-Device-Token', 'X-Ticket-Confirmed'] },
+      belegtDurch: [{ ohne: 'X-Ticket-Confirmed', status: wOhne.status, code: wOhne.json?.error?.code }],
+    });
   }
+
+  // --- Zweite Beobachtung MIT aktiven Meldungen -----------------------------
+  // Warum das sein muss: auf einer FRISCHEN API tragen die Abfahrten kein gefuelltes
+  // warnings[]; erst mit einer aktiven Meldung erscheinen die verschachtelten Objekte.
+  // Bis zum 24.08.2026 zeichnete das Skript nur VOR den Meldungen auf — der abgelegte
+  // Vertrag stimmte damit nur, wenn zufaellig schon Meldungen aus einem frueheren Lauf
+  // im Speicher lagen. Der Vertrags-Gate war dadurch FLATTERIG: erster Lauf gegen eine
+  // frische API rot, zweiter gruen. Beide Datenlagen aufzuzeichnen macht ihn deterministisch
+  // UND liefert die richtige Optionalitaet fuer warnings[].
+  const direktMit = (await ruf('POST', '/v1/journeys/search',
+    { headers: H, body: { from_stop_id: stopId, to_stop_id: ziel }, erwartet: 200 })).json;
+  erfasse('journeys.search', 'POST', '/v1/journeys/search', [direkt, mitUmstieg, direktMit], {
+    hinweis: 'next_departures traegt KEIN route_id/headsign — die stehen auf der Verbindung. '
+           + 'Genau diese Asymmetrie war Launch-Blocker 2 (Flutter-TypeError). '
+           + 'Drei Beobachtungen: Direktstrecke ohne Meldungen, Umstiegsstrecke, Direktstrecke MIT Meldungen.',
+  });
+  const abfMit = (await ruf('GET', `/v1/stops/${stopId}/departures?limit=5`, { headers: H, erwartet: 200 })).json;
+  erfasse('stops.departures', 'GET', '/v1/stops/{stopId}/departures', [abfOhne, abfMit], {
+    hinweis: 'Zwei Datenlagen: ohne und mit aktiver Meldung an der Fahrt.',
+  });
 
   const ohneTicketHeader = await ruf('GET', '/v1/cities/hamburg/reports', { headers: H });
   erfasse('reports.list', 'GET', '/v1/cities/{slug}/reports',
@@ -253,7 +341,11 @@ async function main() {
   const T2 = await geraet();
   const H2 = { 'X-Device-Token': T2, 'X-Ticket-Confirmed': 'true' };
   const ereignis = await ruf('POST', `/v1/reports/${erstellt.json.id}/events`, { headers: H2, body: { type: 'confirm' } });
-  erfasse('reports.event', 'POST', '/v1/reports/{id}/events', [ereignis.json], { status: ereignis.status });
+  // 204 hat per Entwurf keinen Koerper. Das ist KEINE Beobachtungsluecke, sondern die
+  // vollstaendige Form dieser Antwort — deshalb ausdruecklich „leer" statt „unbeobachtet".
+  erfasse('reports.event', 'POST', '/v1/reports/{id}/events', [ereignis.json],
+    { status: ereignis.status, ohneKoerper: true,
+      hinweis: '204 No Content — der Vertrag ist hier vollstaendig, es gibt keinen Koerper.' });
 
   // --- Abrechnung ---
   // Beleg je Lauf eindeutig: sonst antwortet ein zweiter Lauf gegen dieselbe

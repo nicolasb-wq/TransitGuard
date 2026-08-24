@@ -1,0 +1,38 @@
+### ACHTUNG beim Lesen dieser Datei ###
+Der ERSTE Block unten ("Vergleich: derselbe CityExtractor direkt aus der DATEI") ist
+UNGUELTIG. Beide Varianten liefen im selben Prozess; der Heap der ersten hatte den
+RSS-Ausgangswert der zweiten schon aufgeblaeht. Ergebnis war -46,7 MB, also scheinbar
+zugunsten des MemoryStreams — das Gegenteil des richtigen Befunds.
+Guelig sind die Laeufe darunter, jeder in einem EIGENEN Prozess:
+  StaticSyncJob ueber MemoryStream .... 687,1 MB Spitzen-RSS
+  CityExtractor aus Datei ............ 418,1 MB Spitzen-RSS
+  StaticSyncJob NACH dem Fix ......... 437,2 MB Spitzen-RSS
+Der Fehler ist in docs/28-build-log.md Abschnitt F.2 festgehalten.
+########################################
+
+=== Lauf 1: eigener Prozess, NUR StaticSyncJob (Produktionspfad, MemoryStream) ===
+=== StaticSyncJob (Produktionspfad) gegen 251.3 MB ZIP ===
+
+  StaticSyncJob.RunAsync (Produktionspfad, MemoryStream) Peak-RSS   687.1 MB  RSS danach   687.1 MB  alloziert 80828.5 MB  CPU    91150 ms  Wand   90174 ms
+
+  Erfolg True, 263,555,358 B, Stops 15,019, Trips 78,518, Whitelist 78,518
+  Prozess-Peak-RSS: 687.2 MB
+
+JSON: docs/messungen/a7_job.json
+
+=== Lauf 2: eigener Prozess, NUR CityExtractor aus Datei ===
+=== StaticSyncJob (Produktionspfad) gegen 251.3 MB ZIP ===
+
+  (Stops 15,019, Trips 78,518, Whitelist 78,518)
+  CityExtractor direkt aus DATEI (ohne MemoryStream) Peak-RSS   418.1 MB  RSS danach   418.1 MB  alloziert 80309.7 MB  CPU    95190 ms  Wand   95017 ms
+  Prozess-Peak-RSS: 418.3 MB
+
+JSON: docs/messungen/a7_datei.json
+=== StaticSyncJob (Produktionspfad) gegen 251.3 MB ZIP ===
+
+  StaticSyncJob.RunAsync (Produktionspfad, MemoryStream) Peak-RSS   437.2 MB  RSS danach   437.2 MB  alloziert 80324.0 MB  CPU    96520 ms  Wand   95374 ms
+
+  Erfolg True, 263,555,358 B, Stops 15,019, Trips 78,518, Whitelist 78,518
+  Prozess-Peak-RSS: 437.3 MB
+
+JSON: docs/messungen/a7_job_nachher.json

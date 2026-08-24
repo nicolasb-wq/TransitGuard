@@ -98,9 +98,30 @@ void main() {
       expect(['trial', 'subscriber', 'locked'], contains(m.access));
     });
 
-    test('Unbeobachtete Endpunkte sind ausgewiesen, nicht stillschweigend leer', () {
-      // Dokumentierte Lücke: hier schützt der Vertrag nichts.
-      expect(kVertragUnbeobachtet, contains('cities.alerts'));
+    test('Der Vertrag weist Beobachtungsluecken aus, statt sie zu verschweigen', () {
+      // Am 24.08.2026 wurden die letzten drei Luecken geschlossen: cities.alerts
+      // (der Poll-Job schrieb die Alerts nirgendwo hin), journeys.warnings (die
+      // Aufzeichnung fragte vor der Meldung und vom falschen Halt aus) und
+      // reports.event (204 hat per Entwurf keinen Koerper — Vollstaendigkeit,
+      // keine Luecke). kVertragUnbeobachtet ist seither leer.
+      //
+      // Der Test prueft deshalb nicht mehr, DASS eine bestimmte Luecke drinsteht,
+      // sondern dass der Mechanismus lebt: die Liste existiert, und was drinsteht,
+      // ist ein echter Endpunktname. Waere sie einfach weggefallen, wuerde eine
+      // neue Luecke stumm entstehen.
+      expect(kVertragUnbeobachtet, isA<List<String>>());
+      for (final e in kVertragUnbeobachtet) {
+        expect(kVertragPflichtFelder.keys, contains(e),
+            reason: '„$e" ist als unbeobachtet gemeldet, kommt im Vertrag aber nicht vor.');
+      }
+    });
+
+    test('cities.alerts hat jetzt eine beobachtete Form', () {
+      // Gegenprobe zum obigen: der Endpunkt, der am laengsten „unbeobachtet" war,
+      // muss echte Pflichtfelder tragen — sonst ist die Luecke nur umbenannt.
+      expect(kVertragUnbeobachtet, isNot(contains('cities.alerts')));
+      expect(kVertragPflichtFelder['cities.alerts'], contains('[].header'));
+      expect(kVertragPflichtFelder['cities.alerts'], contains('[].severity'));
     });
   });
 

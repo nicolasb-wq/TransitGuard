@@ -14,8 +14,19 @@
 // Nutzung (API und App müssen unter EINEM Origin liegen — siehe scripts/flutter-e2e.sh):
 //   flutter drive --driver=test_driver/integration_test.dart \
 //     --target=integration_test/app_test.dart -d chrome --browser-name=chrome
+//
+// Auf einem Android-Geraet (vollstaendige Anleitung: docs/29-android-geraetetest.md):
+//   adb reverse tcp:5099 tcp:5099
+//   flutter drive --driver=test_driver/integration_test.dart \
+//     --target=integration_test/app_test.dart \
+//     --dart-define=API_BASE=http://127.0.0.1:5099 -d <geraete-id>
+//
+// UNBELEGT: Diese Faelle sind in der Bausandbox nie gelaufen — weder auf einem Geraet
+// noch ueber `flutter drive` im Browser (CanvasKit wird von www.gstatic.com geladen und
+// vom Proxy geblockt). Statisch analysiert ja, zur Laufzeit nein.
 // ---------------------------------------------------------------------------
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +43,20 @@ void main() {
       await t.pump(const Duration(milliseconds: 120));
     }
   }
+
+  /// E-0 muss ZUERST laufen: scheitert die API-Verbindung, sind alle folgenden
+  /// Fehlschlaege Folgefehler und sagen nichts ueber die App. Ohne diesen Fall haette
+  /// ein vergessenes `adb reverse` wie ein App-Fehler ausgesehen.
+  testWidgets('E-0: die API ist ueberhaupt erreichbar', (t) async {
+    final antwort = await http
+        .get(Uri.parse('$kApiBase/health/ready'))
+        .timeout(const Duration(seconds: 10), onTimeout: () => http.Response('timeout', 599));
+    expect(antwort.statusCode, 200,
+        reason: 'Keine API unter $kApiBase (Status ${antwort.statusCode}).\n'
+            'Auf einem Geraet: `adb reverse tcp:5099 tcp:5099` und die API auf 0.0.0.0 starten,\n'
+            'dann `--dart-define=API_BASE=http://127.0.0.1:5099`.\n'
+            'Im Release-Build ist Klartext-HTTP gesperrt — siehe docs/29 Abschnitt 5.');
+  });
 
   testWidgets('E-1: App startet und zeigt die drei Ziele', (t) async {
     SharedPreferences.setMockInitialValues({});
